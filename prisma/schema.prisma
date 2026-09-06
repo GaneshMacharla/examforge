@@ -1,0 +1,155 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String     @id @default(cuid())
+  name          String
+  email         String     @unique
+  mobile        String?
+  passwordHash  String
+  role                  String       @default("STUDENT") // STUDENT, ADMIN
+  targetExam            String?
+  deviceResetCooldownAt DateTime?    // Can reset registered devices once every 30 days
+  createdAt             DateTime     @default(now())
+  purchases             Purchase[]
+  attempts              Attempt[]
+  devices               UserDevice[]
+}
+
+model Exam {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  code        String    @unique // e.g. SSC, BANKING, RRB, UPSC, APPSC
+  description String?
+  icon        String?
+  subjects    Subject[]
+  bundles     Bundle[]
+}
+
+model Subject {
+  id          String     @id @default(cuid())
+  examId      String
+  exam        Exam       @relation(fields: [examId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  topics      Topic[]
+  questions   Question[]
+}
+
+model Topic {
+  id          String     @id @default(cuid())
+  subjectId   String
+  subject     Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  name        String
+  questions   Question[]
+}
+
+model Question {
+  id            String           @id @default(cuid())
+  subjectId     String
+  subject       Subject          @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  topicId       String
+  topic         Topic            @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  questionText  String
+  imageUrl      String?
+  optionA       String
+  optionB       String
+  optionC       String
+  optionD       String
+  correctAnswer String           // A, B, C, or D
+  explanation   String
+  difficulty    String           @default("Medium") // Easy, Medium, Hard
+  tags          String?          // comma-separated tags
+  createdAt     DateTime         @default(now())
+  bundleLinks   BundleQuestion[]
+  attemptAnswers AttemptAnswer[]
+}
+
+model Bundle {
+  id          String           @id @default(cuid())
+  name        String
+  description String
+  examId      String
+  exam        Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
+  subjectName String?
+  difficulty  String           @default("Mixed") // Easy, Medium, Hard, Mixed
+  price       Int              // in INR, e.g. 49
+  thumbnail   String?
+  status      String           @default("PUBLISHED") // DRAFT, PUBLISHED, ARCHIVED
+  createdAt   DateTime         @default(now())
+  questions   BundleQuestion[]
+  purchases   Purchase[]
+  attempts    Attempt[]
+}
+
+model BundleQuestion {
+  bundleId   String
+  questionId String
+  bundle     Bundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([bundleId, questionId])
+}
+
+model Purchase {
+  id                 String   @id @default(cuid())
+  userId             String
+  bundleId           String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bundle             Bundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  amount             Int
+  razorpayOrderId    String?
+  razorpayPaymentId  String?
+  status             String   @default("PAID") // CREATED, PAID, FAILED, REFUNDED
+  purchasedAt        DateTime @default(now())
+}
+
+model Attempt {
+  id             String          @id @default(cuid())
+  userId         String
+  bundleId       String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bundle         Bundle          @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  mode           String          @default("TEST") // PRACTICE or TEST
+  score          Int             @default(0)
+  totalQuestions Int
+  correct        Int             @default(0)
+  incorrect      Int             @default(0)
+  unanswered     Int             @default(0)
+  accuracy       Float           @default(0.0)
+  timeTakenSec   Int             @default(0)
+  completedAt    DateTime        @default(now())
+  answers        AttemptAnswer[]
+}
+
+model AttemptAnswer {
+  id             String   @id @default(cuid())
+  attemptId      String
+  questionId     String
+  attempt        Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question       Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedAnswer String?  // A, B, C, D or null
+  isCorrect      Boolean  @default(false)
+  answeredAt     DateTime @default(now())
+}
+
+model UserDevice {
+  id                String   @id @default(cuid())
+  userId            String
+  deviceFingerprint String
+  deviceName        String
+  ipAddress         String?
+  lastActiveAt      DateTime @default(now())
+  createdAt         DateTime @default(now())
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceFingerprint])
+  @@index([userId])
+}
