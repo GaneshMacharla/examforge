@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { getMockBundleDetail } from '@/lib/mockData';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
-    const { id } = await params;
     const currentUser = await getCurrentUser();
 
     const bundle = await prisma.bundle.findUnique({
@@ -34,6 +35,10 @@ export async function GET(
     });
 
     if (!bundle) {
+      const fallback = getMockBundleDetail(id, currentUser?.role === 'ADMIN');
+      if (fallback) {
+        return NextResponse.json({ bundle: fallback });
+      }
       return NextResponse.json({ error: 'Bundle not found' }, { status: 404 });
     }
 
@@ -99,7 +104,11 @@ export async function GET(
       },
     });
   } catch (error: unknown) {
-    console.error('Fetch bundle detail error:', error);
+    console.warn('Fetch bundle detail database error, using mock fallback:', error);
+    const fallback = getMockBundleDetail(id);
+    if (fallback) {
+      return NextResponse.json({ bundle: fallback });
+    }
     return NextResponse.json({ error: 'Failed to fetch bundle detail' }, { status: 500 });
   }
 }

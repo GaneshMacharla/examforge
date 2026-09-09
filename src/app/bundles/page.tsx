@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Search, Filter, BookOpen, CheckCircle2, ArrowRight, Zap, HelpCircle } from 'lucide-react';
+import { BundleCardSkeleton } from '@/components/Skeleton';
 
 interface Bundle {
   id: string;
@@ -88,38 +89,40 @@ export default function BundlesCatalogPage() {
           </button>
         </form>
 
-        <div className="flex flex-wrap items-center gap-4 pt-2 border-t border-slate-100 text-xs font-medium text-slate-600">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-700">Exam:</span>
-            <select
-              value={selectedExam}
-              onChange={(e) => setSelectedExam(e.target.value)}
-              className="px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              <option value="ALL">All Exams</option>
-              <option value="SSC">SSC (CGL, CHSL)</option>
-              <option value="BANKING">Banking & Insurance</option>
-              <option value="RRB">RRB Railways</option>
-              <option value="STATE_PSC">State PSCs</option>
-            </select>
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 text-xs font-medium text-slate-600">
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+              <span className="font-semibold text-slate-700 shrink-0">Exam:</span>
+              <select
+                value={selectedExam}
+                onChange={(e) => setSelectedExam(e.target.value)}
+                className="w-full sm:w-auto px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[36px]"
+              >
+                <option value="ALL">All Exams</option>
+                <option value="SSC">SSC (CGL, CHSL)</option>
+                <option value="BANKING">Banking & Insurance</option>
+                <option value="RRB">RRB Railways</option>
+                <option value="STATE_PSC">State PSCs</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+              <span className="font-semibold text-slate-700 shrink-0">Difficulty:</span>
+              <select
+                value={selectedDifficulty}
+                onChange={(e) => setSelectedDifficulty(e.target.value)}
+                className="w-full sm:w-auto px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[36px]"
+              >
+                <option value="ALL">All Difficulties</option>
+                <option value="Easy">Easy</option>
+                <option value="Medium">Medium</option>
+                <option value="Hard">Hard</option>
+                <option value="Mixed">Mixed</option>
+              </select>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-700">Difficulty:</span>
-            <select
-              value={selectedDifficulty}
-              onChange={(e) => setSelectedDifficulty(e.target.value)}
-              className="px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            >
-              <option value="ALL">All Difficulties</option>
-              <option value="Easy">Easy</option>
-              <option value="Medium">Medium</option>
-              <option value="Hard">Hard</option>
-              <option value="Mixed">Mixed</option>
-            </select>
-          </div>
-
-          <div className="ml-auto text-slate-400">
+          <div className="text-slate-400 text-xs w-full sm:w-auto text-right sm:text-left">
             Found <span className="font-bold text-slate-700">{bundles.length}</span> bundles
           </div>
         </div>
@@ -127,9 +130,9 @@ export default function BundlesCatalogPage() {
 
       {/* Bundles Listing */}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="h-80 rounded-2xl bg-white border border-slate-200 p-6 animate-pulse" />
+            <BundleCardSkeleton key={i} />
           ))}
         </div>
       ) : bundles.length === 0 ? (

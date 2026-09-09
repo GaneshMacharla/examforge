@@ -13,6 +13,8 @@ import {
   Upload,
 } from 'lucide-react';
 
+import { AdminOverviewSkeleton } from '@/components/Skeleton';
+
 interface OverviewData {
   metrics: {
     totalStudents: number;
@@ -47,21 +49,13 @@ export default function AdminOverviewPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 bg-white rounded-2xl border border-slate-200 animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
+    return <AdminOverviewSkeleton />;
   }
 
   if (!data) return null;
 
   return (
-    <div className="space-y-8 max-w-6xl">
+    <div className="space-y-8 max-w-6xl animate-fade-in">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

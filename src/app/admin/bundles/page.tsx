@@ -12,6 +12,7 @@ import {
   Loader2,
   Eye,
 } from 'lucide-react';
+import { Skeleton } from '@/components/Skeleton';
 
 interface BundleItem {
   id: string;
@@ -220,11 +221,25 @@ export default function AdminBundlesPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400 font-medium">
-                    Loading bundles...
-                  </td>
-                </tr>
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i} className="animate-fade-in">
+                    <td className="py-4 px-4">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
+                        <div className="space-y-1.5 flex-1">
+                          <Skeleton className="h-3.5 w-44 rounded-md" />
+                          <Skeleton className="h-3 w-28 rounded-md" />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-4"><Skeleton className="h-4 w-20 rounded-md" /></td>
+                    <td className="py-4 px-4"><Skeleton className="h-4 w-12 rounded-md" /></td>
+                    <td className="py-4 px-4"><Skeleton className="h-4 w-16 rounded-md" /></td>
+                    <td className="py-4 px-4"><Skeleton className="h-6 w-16 rounded-full" /></td>
+                    <td className="py-4 px-4"><Skeleton className="h-4 w-24 rounded-md" /></td>
+                    <td className="py-4 px-4 text-right"><Skeleton className="h-7 w-16 rounded-lg ml-auto" /></td>
+                  </tr>
+                ))
               ) : bundles.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-slate-400 font-medium">
@@ -233,7 +248,7 @@ export default function AdminBundlesPage() {
                 </tr>
               ) : (
                 bundles.map((b) => (
-                  <tr key={b.id} className="hover:bg-slate-50/70 transition-colors">
+                  <tr key={b.id} className="hover:bg-slate-50/70 transition-colors animate-fade-in">
                     <td className="py-3.5 px-4">
                       <div className="font-bold text-slate-900 line-clamp-1">{b.name}</div>
                       <div className="text-[11px] text-slate-400 line-clamp-1">{b.description}</div>

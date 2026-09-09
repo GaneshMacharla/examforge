@@ -17,6 +17,7 @@ import {
   RotateCcw,
   Loader2,
 } from 'lucide-react';
+import { TableSkeleton } from '@/components/Skeleton';
 
 interface Student {
   id: string;
@@ -191,10 +192,11 @@ export default function AdminStudentsPage() {
       </div>
 
       {/* Students Table */}
-      <div className="bg-white border border-slate-200 shadow-xs rounded-2xl overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center text-slate-400 font-medium">Loading student directory...</div>
-        ) : filteredStudents.length === 0 ? (
+      {loading ? (
+        <TableSkeleton rows={4} />
+      ) : (
+      <div className="bg-white border border-slate-200 shadow-xs rounded-2xl overflow-hidden animate-fade-in">
+        {filteredStudents.length === 0 ? (
           <div className="p-12 text-center text-slate-400 font-medium">
             No students found matching your search or filter.
           </div>
@@ -295,6 +297,7 @@ export default function AdminStudentsPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* Student Bundles Modal */}
       {activeStudentModal && (

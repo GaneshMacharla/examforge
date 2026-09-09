@@ -126,55 +126,55 @@ export default function TestResultsPage() {
         </div>
 
         {/* Score Ring / Metric Boxes */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 max-w-3xl mx-auto pt-2">
-          <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-1">
-            <span className="text-[11px] font-semibold text-indigo-800 uppercase">Score</span>
-            <div className="text-2xl sm:text-3xl font-black text-indigo-700">
-              {data.score} <span className="text-sm text-indigo-400 font-bold">/ {data.totalQuestions}</span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 max-w-3xl mx-auto pt-2">
+          <div className="p-3 sm:p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-1">
+            <span className="text-[10px] sm:text-[11px] font-semibold text-indigo-800 uppercase">Score</span>
+            <div className="text-xl sm:text-2xl lg:text-3xl font-black text-indigo-700">
+              {data.score} <span className="text-xs sm:text-sm text-indigo-400 font-bold">/ {data.totalQuestions}</span>
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-100 space-y-1">
-            <span className="text-[11px] font-semibold text-emerald-800 uppercase">Accuracy</span>
-            <div className="text-2xl sm:text-3xl font-black text-emerald-700">
+          <div className="p-3 sm:p-4 rounded-2xl bg-emerald-50/70 border border-emerald-100 space-y-1">
+            <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-800 uppercase">Accuracy</span>
+            <div className="text-xl sm:text-2xl lg:text-3xl font-black text-emerald-700">
               {data.accuracy}%
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-100 space-y-1">
-            <span className="text-[11px] font-semibold text-emerald-800 uppercase">Correct</span>
-            <div className="text-2xl sm:text-3xl font-black text-emerald-600">
+          <div className="p-3 sm:p-4 rounded-2xl bg-emerald-50/40 border border-emerald-100 space-y-1">
+            <span className="text-[10px] sm:text-[11px] font-semibold text-emerald-800 uppercase">Correct</span>
+            <div className="text-xl sm:text-2xl lg:text-3xl font-black text-emerald-600">
               {data.correct}
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-rose-50/70 border border-rose-100 space-y-1">
-            <span className="text-[11px] font-semibold text-rose-800 uppercase">Incorrect</span>
-            <div className="text-2xl sm:text-3xl font-black text-rose-600">
+          <div className="p-3 sm:p-4 rounded-2xl bg-rose-50/70 border border-rose-100 space-y-1">
+            <span className="text-[10px] sm:text-[11px] font-semibold text-rose-800 uppercase">Incorrect</span>
+            <div className="text-xl sm:text-2xl lg:text-3xl font-black text-rose-600">
               {data.incorrect}
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-slate-100 border border-slate-200 space-y-1 col-span-2 sm:col-span-1">
-            <span className="text-[11px] font-semibold text-slate-600 uppercase">Time</span>
-            <div className="text-xl sm:text-2xl font-black text-slate-800">
+          <div className="p-3 sm:p-4 rounded-2xl bg-slate-100 border border-slate-200 space-y-1 col-span-2 sm:col-span-1">
+            <span className="text-[10px] sm:text-[11px] font-semibold text-slate-600 uppercase">Time</span>
+            <div className="text-lg sm:text-xl lg:text-2xl font-black text-slate-800">
               {Math.floor(data.timeTakenSec / 60)}m {data.timeTakenSec % 60}s
             </div>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2.5 sm:gap-3 pt-2">
           <Link
             href={`/practice/${bundleId}`}
-            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-200 transition-all flex items-center gap-1.5"
+            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-1.5 min-h-[42px]"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Retake Practice Set</span>
           </Link>
           <Link
             href="/student/dashboard"
-            className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs transition-colors flex items-center gap-1.5"
+            className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 min-h-[42px]"
           >
             <LayoutDashboard className="w-4 h-4" />
             <span>Go to Dashboard</span>
@@ -184,19 +184,19 @@ export default function TestResultsPage() {
 
       {/* 2. QUESTION-BY-QUESTION REVIEW */}
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Question Review & Solutions</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900">Question Review & Solutions</h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Review every answer with complete step-by-step explanations
             </p>
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold">
+          {/* Filter Pills with Horizontal Swipe on Mobile */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold overflow-x-auto scrollbar-none max-w-full">
             <button
               onClick={() => setFilter('ALL')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
+              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-all ${
                 filter === 'ALL' ? 'bg-white text-slate-900 font-bold shadow-xs' : 'text-slate-600'
               }`}
             >
@@ -204,7 +204,7 @@ export default function TestResultsPage() {
             </button>
             <button
               onClick={() => setFilter('CORRECT')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
+              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-all ${
                 filter === 'CORRECT' ? 'bg-white text-emerald-700 font-bold shadow-xs' : 'text-slate-600'
               }`}
             >
@@ -212,7 +212,7 @@ export default function TestResultsPage() {
             </button>
             <button
               onClick={() => setFilter('INCORRECT')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
+              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-all ${
                 filter === 'INCORRECT' ? 'bg-white text-rose-700 font-bold shadow-xs' : 'text-slate-600'
               }`}
             >
@@ -220,7 +220,7 @@ export default function TestResultsPage() {
             </button>
             <button
               onClick={() => setFilter('UNANSWERED')}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
+              className={`px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-all ${
                 filter === 'UNANSWERED' ? 'bg-white text-amber-700 font-bold shadow-xs' : 'text-slate-600'
               }`}
             >

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ShoppingBag, CheckCircle2, Zap, ArrowRight, ShieldCheck } from 'lucide-react';
+import { PurchasedBundleSkeleton } from '@/components/Skeleton';
 
 interface Purchase {
   id: string;
@@ -54,9 +55,9 @@ export default function StudentPurchasesPage() {
       </div>
 
       {loading ? (
-        <div className="space-y-3">
+        <div className="space-y-4 animate-fade-in">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-white rounded-2xl border border-slate-200 animate-pulse" />
+            <PurchasedBundleSkeleton key={i} />
           ))}
         </div>
       ) : purchases.length === 0 ? (
@@ -105,11 +106,11 @@ export default function StudentPurchasesPage() {
                 </div>
               </div>
 
-              <div className="flex items-center sm:flex-col sm:items-end justify-between gap-2 shrink-0">
+              <div className="flex items-center sm:flex-col sm:items-end justify-between gap-2 shrink-0 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                 <div className="text-xl font-black text-slate-900">₹{p.amount}</div>
                 <Link
                   href={`/practice/${p.bundleId}`}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-indigo-200 transition-all"
+                  className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-indigo-200 transition-all min-h-[38px]"
                 >
                   <Zap className="w-3.5 h-3.5" />
                   <span>Start Practice</span>

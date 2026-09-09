@@ -21,6 +21,7 @@ import {
   ArrowRight,
   Eye,
 } from 'lucide-react';
+import { Skeleton, QuestionCardSkeleton } from '@/components/Skeleton';
 
 interface Question {
   index: number;
@@ -64,6 +65,7 @@ export default function PracticeEnginePage() {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [revealedInPractice, setRevealedInPractice] = useState<Record<string, boolean>>({});
   const [markedForReview, setMarkedForReview] = useState<Record<string, boolean>>({});
+  const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
 
   // Timed Test state
   const [timerSeconds, setTimerSeconds] = useState(0);
@@ -203,8 +205,35 @@ export default function PracticeEnginePage() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-16 space-y-6">
-        <div className="h-64 rounded-2xl bg-white border border-slate-200 animate-pulse" />
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:py-8 space-y-6 animate-fade-in">
+        {/* Practice Engine Top Header Skeleton */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white rounded-2xl border border-slate-200 shadow-xs">
+          <div className="space-y-1.5">
+            <Skeleton className="h-5 w-48 rounded-md" />
+            <Skeleton className="h-3.5 w-32 rounded-md" />
+          </div>
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-9 w-28 rounded-xl" />
+            <Skeleton className="h-9 w-24 rounded-xl" />
+          </div>
+        </div>
+
+        {/* 2-Column Question Workspace Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-3 space-y-6">
+            <QuestionCardSkeleton />
+          </div>
+          <div className="lg:col-span-1 hidden lg:block">
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4 shadow-xs">
+              <Skeleton className="h-4 w-28 rounded-md" />
+              <div className="grid grid-cols-5 gap-2">
+                {Array.from({ length: 15 }).map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-8 rounded-lg" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -270,91 +299,105 @@ export default function PracticeEnginePage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* 1. TOP HEADER & MODE CONTROLS */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="space-y-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded uppercase">
               {bundle?.examName}
             </span>
             <span className="text-xs text-slate-400">•</span>
-            <span className="text-xs text-slate-500 font-medium">{currentQ.topicName}</span>
+            <span className="text-xs text-slate-500 font-medium truncate max-w-[200px] sm:max-w-none">{currentQ.topicName}</span>
           </div>
-          <h1 className="text-lg font-extrabold text-slate-900 line-clamp-1">{bundle?.name}</h1>
+          <h1 className="text-base sm:text-lg font-extrabold text-slate-900 line-clamp-1">{bundle?.name}</h1>
         </div>
 
-        {/* Mode Selector Toggle */}
-        <div className="flex items-center gap-3">
-          <div className="flex p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
+        {/* Mode Selector Toggle & Actions */}
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2.5 w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+          <div className="flex p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold shrink-0">
             <button
               onClick={() => setMode('PRACTICE')}
-              className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
                 mode === 'PRACTICE'
                   ? 'bg-white text-indigo-600 shadow-xs font-extrabold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Zap className="w-3.5 h-3.5" />
-              <span>Practice Mode</span>
+              <Zap className="w-3.5 h-3.5 text-amber-500" />
+              <span>Practice</span>
             </button>
 
             <button
               onClick={() => setMode('TEST')}
-              className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
                 mode === 'TEST'
                   ? 'bg-white text-indigo-600 shadow-xs font-extrabold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Clock className="w-3.5 h-3.5" />
-              <span>Timed Test Mode</span>
+              <Clock className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Timed Test</span>
             </button>
           </div>
 
-          {/* Timer Display in TEST mode */}
-          {mode === 'TEST' && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 font-mono text-sm font-bold shadow-xs">
-              <Clock className="w-4 h-4 text-amber-600 animate-pulse" />
-              <span>{formatTimer(timerSeconds)}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Timer Display in TEST mode */}
+            {mode === 'TEST' && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 font-mono text-xs sm:text-sm font-bold shadow-xs">
+                <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                <span>{formatTimer(timerSeconds)}</span>
+              </div>
+            )}
 
-          <button
-            onClick={() => setIsSubmitModalOpen(true)}
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <Send className="w-3.5 h-3.5" />
-            <span>Finish Test</span>
-          </button>
+            <button
+              onClick={() => setIsSubmitModalOpen(true)}
+              className="px-3 sm:px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Finish</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* 2. MAIN PRACTICE WORKSPACE (QUESTION + PALETTE) */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         {/* Left 3 Cols: Question Area */}
-        <div className="lg:col-span-3 space-y-6">
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs space-y-6">
+        <div className="lg:col-span-3 space-y-6 min-w-0">
+          <div className="bg-white p-5 sm:p-8 rounded-3xl border border-slate-200 shadow-xs space-y-5 sm:space-y-6">
             {/* Question Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-3">
-                <span className="px-3 py-1 rounded-lg bg-slate-900 text-white font-black text-sm">
+            <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-4 gap-2">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <span className="px-2.5 sm:px-3 py-1 rounded-lg bg-slate-900 text-white font-black text-xs sm:text-sm shrink-0">
                   Q {currentIndex + 1}
                 </span>
                 <span className="text-xs text-slate-400 font-semibold">
-                  of {questions.length} Questions
+                  of {questions.length}
                 </span>
+
+                {/* Mobile Quick Palette Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setMobilePaletteOpen(true)}
+                  className="lg:hidden ml-1 px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                  title="Open question palette"
+                >
+                  <Eye className="w-3 h-3" />
+                  <span>Palette ({answeredCount}/{questions.length})</span>
+                </button>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={toggleMarkForReview}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
                     isCurrentMarked
                       ? 'bg-amber-100 text-amber-900 border border-amber-300'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   <Flag className="w-3.5 h-3.5" />
-                  <span>{isCurrentMarked ? 'Marked for Review' : 'Mark Review'}</span>
+                  <span className="hidden sm:inline">{isCurrentMarked ? 'Marked for Review' : 'Mark Review'}</span>
+                  <span className="sm:hidden">{isCurrentMarked ? 'Marked' : 'Review'}</span>
                 </button>
 
                 {currentSelected && (
@@ -458,24 +501,24 @@ export default function PracticeEnginePage() {
             )}
 
             {/* Navigation buttons */}
-            <div className="flex items-center justify-between pt-6 border-t border-slate-100">
+            <div className="flex items-center justify-between pt-6 border-t border-slate-100 gap-2">
               <button
                 onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
                 disabled={currentIndex === 0}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold text-xs transition-colors flex items-center gap-1.5 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed min-h-[42px]"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <span>Previous</span>
               </button>
 
-              <span className="text-xs text-slate-400 font-medium">
+              <span className="text-xs text-slate-400 font-medium px-2 shrink-0">
                 {currentIndex + 1} / {questions.length}
               </span>
 
               {currentIndex < questions.length - 1 ? (
                 <button
                   onClick={() => setCurrentIndex((prev) => prev + 1)}
-                  className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors flex items-center gap-1.5 shadow-sm shadow-indigo-200 cursor-pointer"
+                  className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm shadow-indigo-200 cursor-pointer min-h-[42px]"
                 >
                   <span>Next</span>
                   <ChevronRight className="w-4 h-4" />
@@ -483,9 +526,9 @@ export default function PracticeEnginePage() {
               ) : (
                 <button
                   onClick={() => setIsSubmitModalOpen(true)}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors flex items-center gap-1.5 shadow-sm shadow-emerald-200 cursor-pointer"
+                  className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-200 cursor-pointer min-h-[42px]"
                 >
-                  <span>Submit Test</span>
+                  <span>Submit</span>
                   <Send className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -604,6 +647,80 @@ export default function PracticeEnginePage() {
                 {isSubmitting ? 'Scoring...' : 'Confirm Submit'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Question Palette Modal Drawer */}
+      {mobilePaletteOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200 lg:hidden">
+          <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-2xl space-y-4 max-h-[85vh] flex flex-col animate-in slide-in-from-bottom-4 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-base text-slate-900">Question Palette</h3>
+                <p className="text-xs text-indigo-600 font-semibold">{answeredCount} of {questions.length} Answered</p>
+              </div>
+              <button
+                onClick={() => setMobilePaletteOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                aria-label="Close palette"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Summary badges */}
+            <div className="grid grid-cols-2 gap-2 text-[11px] font-semibold text-slate-600">
+              <div className="flex items-center gap-1.5 p-2 rounded-xl bg-indigo-50 border border-indigo-100">
+                <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 shrink-0" />
+                <span>{answeredCount} Answered</span>
+              </div>
+              <div className="flex items-center gap-1.5 p-2 rounded-xl bg-slate-100 border border-slate-200">
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0" />
+                <span>{unansweredCount} Left</span>
+              </div>
+              <div className="flex items-center gap-1.5 p-2 rounded-xl bg-amber-50 border border-amber-100 col-span-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+                <span>{markedCount} Marked for Review</span>
+              </div>
+            </div>
+
+            {/* Question buttons grid */}
+            <div className="grid grid-cols-5 gap-2 overflow-y-auto pr-1 py-2 flex-1 max-h-60 border-t border-slate-100">
+              {questions.map((q, idx) => {
+                const isSelected = !!selectedAnswers[q.id];
+                const isMarked = !!markedForReview[q.id];
+                const isCurrent = currentIndex === idx;
+
+                let paletteStyle = 'bg-slate-100 text-slate-700 hover:bg-slate-200';
+                if (isSelected) paletteStyle = 'bg-indigo-600 text-white font-bold shadow-xs';
+                if (isMarked) paletteStyle = 'bg-amber-400 text-amber-950 font-bold';
+                if (isCurrent) paletteStyle += ' ring-2 ring-indigo-500 ring-offset-2';
+
+                return (
+                  <button
+                    key={q.id}
+                    onClick={() => {
+                      setCurrentIndex(idx);
+                      setMobilePaletteOpen(false);
+                    }}
+                    className={`h-10 rounded-xl text-xs font-semibold flex items-center justify-center transition-all cursor-pointer ${paletteStyle}`}
+                  >
+                    {idx + 1}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => {
+                setMobilePaletteOpen(false);
+                setIsSubmitModalOpen(true);
+              }}
+              className="w-full py-3 rounded-xl bg-slate-900 hover:bg-black text-white font-bold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+            >
+              <span>Submit & Review Results</span>
+            </button>
           </div>
         </div>
       )}

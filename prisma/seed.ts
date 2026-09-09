@@ -32,6 +32,17 @@ async function main() {
     },
   });
 
+  const ganeshPasswordHash = bcrypt.hashSync('evokevoicegani@2026', 10);
+  await prisma.user.create({
+    data: {
+      name: 'Ganesh Macharla (Admin)',
+      email: 'ganimacharla2004@gmail.com',
+      mobile: '9876543210',
+      passwordHash: ganeshPasswordHash,
+      role: 'ADMIN',
+    },
+  });
+
   const studentRahul = await prisma.user.create({
     data: {
       name: 'Rahul Sharma',

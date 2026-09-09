@@ -12,7 +12,10 @@ model User {
   name          String
   email         String     @unique
   mobile        String?
-  passwordHash  String
+  passwordHash          String?
+  avatarUrl             String?
+  oauthProvider         String?      // google, github, sandbox
+  oauthId               String?      // Provider user ID
   role                  String       @default("STUDENT") // STUDENT, ADMIN
   targetExam            String?
   deviceResetCooldownAt DateTime?    // Can reset registered devices once every 30 days

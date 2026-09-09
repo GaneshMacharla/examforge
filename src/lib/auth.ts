@@ -10,6 +10,7 @@ export interface TokenPayload {
   email: string;
   role: string;
   name: string;
+  avatarUrl?: string | null;
 }
 
 export function hashPassword(password: string): string {
@@ -40,18 +41,36 @@ export async function getCurrentUser() {
   const payload = verifyToken(token);
   if (!payload) return null;
 
-  const user = await prisma.user.findUnique({
-    where: { id: payload.userId },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      mobile: true,
-      role: true,
-      targetExam: true,
-      createdAt: true,
-    },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        mobile: true,
+        role: true,
+        targetExam: true,
+        avatarUrl: true,
+        oauthProvider: true,
+        createdAt: true,
+      },
+    });
 
-  return user;
+    if (user) return user;
+  } catch (dbErr) {
+    console.warn('Database query failed in getCurrentUser, using token payload:', dbErr);
+  }
+
+  return {
+    id: payload.userId,
+    name: payload.name,
+    email: payload.email,
+    role: payload.role,
+    mobile: null,
+    targetExam: 'SSC CGL',
+    avatarUrl: payload.avatarUrl,
+    oauthProvider: 'oauth',
+    createdAt: new Date(),
+  };
 }

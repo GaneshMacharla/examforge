@@ -121,40 +121,41 @@ export default function RazorpayModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200">
+      <div className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col animate-in slide-in-from-bottom-4 duration-200">
         {/* Razorpay Brand Header */}
-        <div className="bg-gradient-to-r from-blue-900 to-indigo-900 p-5 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-400/30 flex items-center justify-center font-bold text-blue-300">
+        <div className="bg-gradient-to-r from-blue-900 to-indigo-900 p-4 sm:p-5 text-white flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0 pr-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-400/30 flex items-center justify-center font-bold text-blue-300 shrink-0">
               ₹
             </div>
-            <div>
-              <div className="text-xs uppercase tracking-wider text-blue-200 font-semibold flex items-center gap-1">
+            <div className="min-w-0">
+              <div className="text-[10px] sm:text-xs uppercase tracking-wider text-blue-200 font-semibold flex items-center gap-1.5">
                 <span>Razorpay Gateway</span>
-                <span className="text-[10px] bg-emerald-500 text-white font-bold px-1.5 py-0.2 rounded-full">
+                <span className="text-[9px] sm:text-[10px] bg-emerald-500 text-white font-bold px-1.5 py-0.2 rounded-full">
                   Sandbox Active
                 </span>
               </div>
-              <h3 className="font-bold text-lg leading-tight text-white">{bundle.name}</h3>
+              <h3 className="font-bold text-base sm:text-lg leading-tight text-white truncate">{bundle.name}</h3>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors shrink-0 cursor-pointer"
+            aria-label="Close modal"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Order Summary Bar */}
-        <div className="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center text-sm">
-          <span className="text-slate-600 font-medium">Total Payable Amount</span>
-          <span className="text-xl font-black text-slate-900">₹{bundle.price}</span>
+        <div className="bg-slate-50 px-4 sm:px-5 py-2.5 sm:py-3 border-b border-slate-200 flex justify-between items-center text-sm shrink-0">
+          <span className="text-slate-600 font-medium text-xs sm:text-sm">Total Payable Amount</span>
+          <span className="text-lg sm:text-xl font-black text-slate-900">₹{bundle.price}</span>
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 space-y-4">
+        <div className="p-4 sm:p-5 space-y-4 overflow-y-auto">
           {error && (
             <div className="p-3 text-xs bg-rose-50 border border-rose-200 text-rose-700 rounded-lg">
               {error}
@@ -170,37 +171,37 @@ export default function RazorpayModal({
               <button
                 type="button"
                 onClick={() => setPaymentMethod('upi')}
-                className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                className={`flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl border text-[11px] sm:text-xs font-semibold transition-all cursor-pointer ${
                   paymentMethod === 'upi'
                     ? 'border-indigo-600 bg-indigo-50/50 text-indigo-700 ring-2 ring-indigo-500/20'
                     : 'border-slate-200 hover:border-slate-300 text-slate-700'
                 }`}
               >
-                <Smartphone className="w-5 h-5 mb-1 text-indigo-600" />
+                <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 mb-1 text-indigo-600" />
                 UPI / GPay
               </button>
               <button
                 type="button"
                 onClick={() => setPaymentMethod('card')}
-                className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                className={`flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl border text-[11px] sm:text-xs font-semibold transition-all cursor-pointer ${
                   paymentMethod === 'card'
                     ? 'border-indigo-600 bg-indigo-50/50 text-indigo-700 ring-2 ring-indigo-500/20'
                     : 'border-slate-200 hover:border-slate-300 text-slate-700'
                 }`}
               >
-                <CreditCard className="w-5 h-5 mb-1 text-indigo-600" />
+                <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 mb-1 text-indigo-600" />
                 Cards
               </button>
               <button
                 type="button"
                 onClick={() => setPaymentMethod('netbanking')}
-                className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                className={`flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl border text-[11px] sm:text-xs font-semibold transition-all cursor-pointer ${
                   paymentMethod === 'netbanking'
                     ? 'border-indigo-600 bg-indigo-50/50 text-indigo-700 ring-2 ring-indigo-500/20'
                     : 'border-slate-200 hover:border-slate-300 text-slate-700'
                 }`}
               >
-                <Building className="w-5 h-5 mb-1 text-indigo-600" />
+                <Building className="w-4 h-4 sm:w-5 sm:h-5 mb-1 text-indigo-600" />
                 Net Banking
               </button>
             </div>

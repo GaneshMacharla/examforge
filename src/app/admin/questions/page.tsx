@@ -12,6 +12,7 @@ import {
   Loader2,
   Sparkles,
 } from 'lucide-react';
+import { QuestionCardSkeleton } from '@/components/Skeleton';
 
 interface QuestionItem {
   id: string;
@@ -206,9 +207,9 @@ export default function AdminQuestionBankPage() {
       {/* Questions List */}
       <div className="space-y-4">
         {loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-28 bg-white rounded-2xl border border-slate-200 animate-pulse" />
+          <div className="space-y-4 animate-fade-in">
+            {[1, 2, 3, 4].map((i) => (
+              <QuestionCardSkeleton key={i} />
             ))}
           </div>
         ) : questions.length === 0 ? (

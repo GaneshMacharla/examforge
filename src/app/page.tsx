@@ -15,6 +15,7 @@ import {
   Layers,
   HelpCircle,
 } from 'lucide-react';
+import { BundleCardSkeleton } from '@/components/Skeleton';
 
 interface Bundle {
   id: string;
@@ -69,50 +70,50 @@ export default function HomePage() {
               <span>India's Most Affordable Exam Practice Platform</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.15]">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.15]">
               Practice Smarter.{' '}
               <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-rose-500 bg-clip-text text-transparent">
                 Score Higher. 🎯
               </span>
             </h1>
 
-            <p className="text-lg sm:text-xl text-slate-600 font-normal leading-relaxed">
+            <p className="text-base sm:text-lg lg:text-xl text-slate-600 font-normal leading-relaxed max-w-2xl mx-auto">
               Affordable question bundles designed for competitive exam preparation. Stop paying for expensive annual passes when you only need high-yield practice sets starting at just <span className="font-bold text-slate-900">₹39</span>.
             </p>
 
-            <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 pt-2 max-w-md sm:max-w-none mx-auto">
               <Link
                 href="/bundles"
-                className="px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-base shadow-lg shadow-indigo-200 transition-all flex items-center gap-2 group hover:gap-3"
+                className="px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm sm:text-base shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 group hover:gap-3"
               >
                 <span>Explore Question Bundles</span>
                 <ArrowRight className="w-4 h-4 transition-transform" />
               </Link>
               <Link
                 href="/login"
-                className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-semibold text-base border border-slate-300 shadow-xs transition-colors"
+                className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 font-semibold text-sm sm:text-base border border-slate-300 shadow-xs transition-colors text-center"
               >
                 Login to Student Portal
               </Link>
             </div>
 
             {/* Micro stats banner */}
-            <div className="pt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center max-w-2xl mx-auto border-t border-slate-200/60 mt-8">
-              <div>
-                <div className="text-2xl font-extrabold text-slate-900">10,000+</div>
-                <div className="text-xs text-slate-500 font-medium">Curated Questions</div>
+            <div className="pt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-center max-w-2xl mx-auto border-t border-slate-200/60 mt-8">
+              <div className="p-2">
+                <div className="text-xl sm:text-2xl font-extrabold text-slate-900">10,000+</div>
+                <div className="text-[11px] sm:text-xs text-slate-500 font-medium">Curated Questions</div>
               </div>
-              <div>
-                <div className="text-2xl font-extrabold text-indigo-600">₹49</div>
-                <div className="text-xs text-slate-500 font-medium">Average Bundle Price</div>
+              <div className="p-2">
+                <div className="text-xl sm:text-2xl font-extrabold text-indigo-600">₹49</div>
+                <div className="text-[11px] sm:text-xs text-slate-500 font-medium">Average Bundle Price</div>
               </div>
-              <div>
-                <div className="text-2xl font-extrabold text-slate-900">100%</div>
-                <div className="text-xs text-slate-500 font-medium">Detailed Explanations</div>
+              <div className="p-2">
+                <div className="text-xl sm:text-2xl font-extrabold text-slate-900">100%</div>
+                <div className="text-[11px] sm:text-xs text-slate-500 font-medium">Detailed Explanations</div>
               </div>
-              <div>
-                <div className="text-2xl font-extrabold text-emerald-600">Instant</div>
-                <div className="text-xs text-slate-500 font-medium">Access Unlock</div>
+              <div className="p-2">
+                <div className="text-xl sm:text-2xl font-extrabold text-emerald-600">Instant</div>
+                <div className="text-[11px] sm:text-xs text-slate-500 font-medium">Access Unlock</div>
               </div>
             </div>
           </div>
@@ -129,18 +130,18 @@ export default function HomePage() {
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
               Popular Question Bundles
             </h2>
-            <p className="text-slate-600 text-sm mt-1">
+            <p className="text-slate-600 text-xs sm:text-sm mt-1">
               Select an exam category to filter question sets
             </p>
           </div>
 
           {/* Exam Filter Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none max-w-full">
             {examTabs.map((tab) => (
               <button
                 key={tab.code}
                 onClick={() => setSelectedExam(tab.code)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 transition-all cursor-pointer ${
                   selectedExam === tab.code
                     ? 'bg-indigo-600 text-white shadow-xs'
                     : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
@@ -155,20 +156,17 @@ export default function HomePage() {
         {/* Bundles Grid */}
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-80 rounded-2xl bg-white border border-slate-200 p-6 animate-pulse"
-              />
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <BundleCardSkeleton key={i} />
             ))}
           </div>
         ) : filteredBundles.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
+          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 animate-fade-in">
             <BookOpen className="w-12 h-12 text-slate-400 mx-auto mb-3" />
             <p className="text-slate-600 font-medium">No bundles available in this exam category yet.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
             {filteredBundles.map((b) => (
               <div
                 key={b.id}
@@ -278,7 +276,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             <div className="bg-slate-800/80 border border-slate-700 p-6 rounded-2xl relative">
               <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white mb-4">
                 1

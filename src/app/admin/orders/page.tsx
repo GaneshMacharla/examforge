@@ -14,6 +14,7 @@ import {
   Copy,
   Check,
 } from 'lucide-react';
+import { TableSkeleton } from '@/components/Skeleton';
 
 interface Order {
   id: string;
@@ -156,10 +157,11 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Orders Table */}
-      <div className="bg-white border border-slate-200 shadow-xs rounded-2xl overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center text-slate-400 font-medium">Loading orders history...</div>
-        ) : filteredOrders.length === 0 ? (
+      {loading ? (
+        <TableSkeleton rows={4} />
+      ) : (
+      <div className="bg-white border border-slate-200 shadow-xs rounded-2xl overflow-hidden animate-fade-in">
+        {filteredOrders.length === 0 ? (
           <div className="p-12 text-center text-slate-400 font-medium">
             No transactions found matching your criteria.
           </div>
@@ -249,6 +251,7 @@ export default function AdminOrdersPage() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

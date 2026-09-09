@@ -17,6 +17,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import RazorpayModal from '@/components/RazorpayModal';
+import { Skeleton } from '@/components/Skeleton';
 
 interface BundleDetail {
   id: string;
@@ -104,8 +105,52 @@ export default function BundleDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-16">
-        <div className="h-96 rounded-2xl bg-white border border-slate-200 animate-pulse" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 animate-fade-in">
+        {/* Breadcrumb Skeleton */}
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-4 w-16 rounded-md" />
+          <Skeleton className="h-4 w-4 rounded-md" />
+          <Skeleton className="h-4 w-28 rounded-md" />
+          <Skeleton className="h-4 w-4 rounded-md" />
+          <Skeleton className="h-4 w-40 rounded-md" />
+        </div>
+
+        {/* 2-Column Hero & Purchase Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-4 shadow-xs">
+              <div className="flex gap-2">
+                <Skeleton className="h-6 w-24 rounded-full" />
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
+              <Skeleton className="h-9 w-4/5 rounded-lg" />
+              <Skeleton className="h-4 w-full rounded-md" />
+              <Skeleton className="h-4 w-3/4 rounded-md" />
+              <div className="pt-4 flex gap-4">
+                <Skeleton className="h-10 w-32 rounded-xl" />
+                <Skeleton className="h-10 w-32 rounded-xl" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-4 shadow-xs">
+              <Skeleton className="h-6 w-44 rounded-md" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+              <Skeleton className="h-20 w-full rounded-xl" />
+            </div>
+          </div>
+
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-5 shadow-xs sticky top-24">
+              <Skeleton className="h-44 w-full rounded-2xl" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20 rounded-md" />
+                <Skeleton className="h-8 w-28 rounded-lg" />
+              </div>
+              <Skeleton className="h-12 w-full rounded-2xl" />
+              <Skeleton className="h-4 w-3/4 mx-auto rounded-md" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -123,7 +168,7 @@ export default function BundleDetailPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24 sm:py-10 space-y-8 sm:space-y-10">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
         <Link href="/bundles" className="hover:text-indigo-600">
@@ -346,14 +391,14 @@ export default function BundleDetailPage() {
                   <div className="text-slate-700">{q.explanation}</div>
                 </div>
               ) : (
-                <div className="p-3 rounded-lg bg-indigo-50/70 border border-indigo-100 flex items-center justify-between text-xs text-indigo-900">
+                <div className="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-indigo-900">
                   <div className="flex items-center gap-2">
-                    <Lock className="w-3.5 h-3.5 text-indigo-600" />
+                    <Lock className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                     <span>Correct answer & complete solution unlocked upon purchase</span>
                   </div>
                   <button
                     onClick={handleBuyClick}
-                    className="font-bold text-indigo-600 hover:text-indigo-800"
+                    className="font-bold text-indigo-600 hover:text-indigo-800 self-start sm:self-auto cursor-pointer shrink-0"
                   >
                     Unlock for ₹{bundle.price} →
                   </button>
@@ -362,6 +407,32 @@ export default function BundleDetailPage() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Sticky Bottom Bar for Mobile Devices */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-3 shadow-2xl flex items-center justify-between gap-3 animate-in slide-in-from-bottom-2 duration-200">
+        <div>
+          <span className="text-[10px] text-slate-400 block font-semibold uppercase">One-time price</span>
+          <span className="text-2xl font-black text-slate-900">₹{bundle.price}</span>
+        </div>
+
+        {bundle.isPurchased ? (
+          <Link
+            href={`/practice/${bundle.id}`}
+            className="flex-1 max-w-[200px] py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-200"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span>Practice Now</span>
+          </Link>
+        ) : (
+          <button
+            onClick={handleBuyClick}
+            className="flex-1 max-w-[200px] py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-indigo-200 cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Buy Now — ₹{bundle.price}</span>
+          </button>
+        )}
       </div>
 
       {/* Razorpay Checkout Modal */}

@@ -22,6 +22,7 @@ interface User {
   email: string;
   role: string;
   targetExam?: string;
+  avatarUrl?: string;
 }
 
 export default function Navbar() {
@@ -54,45 +55,21 @@ export default function Navbar() {
     router.refresh();
   };
 
-  const handleQuickLogin = async (type: 'student' | 'admin') => {
-    const credentials =
-      type === 'admin'
-        ? { identifier: 'admin@examhub.com', password: 'admin123' }
-        : { identifier: 'rahul@gmail.com', password: 'student123' };
-
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      setUser(data.user);
-      if (data.user.role === 'ADMIN') {
-        router.push('/admin');
-      } else {
-        router.push('/student/dashboard');
-      }
-      router.refresh();
-    }
-  };
-
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-8">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform">
-                <Sparkles className="w-5 h-5" />
+          <div className="flex items-center gap-4 sm:gap-8 shrink-0">
+            <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group shrink-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-200 group-hover:scale-105 transition-transform shrink-0">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
-              <div>
-                <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+              <div className="shrink-0">
+                <span className="font-extrabold text-lg sm:text-xl tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
                   ExamForge
                 </span>
-                <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 block -mt-1">
+                <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-indigo-600 block -mt-1">
                   Practice Questions
                 </span>
               </div>
@@ -152,29 +129,21 @@ export default function Navbar() {
 
           {/* Right Action Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            {/* Quick Demo Switcher Pill */}
-            <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 border border-slate-200 rounded-full text-xs text-slate-600">
-              <span className="font-semibold text-slate-500 pl-1">Demo:</span>
-              <button
-                onClick={() => handleQuickLogin('student')}
-                className="px-2 py-0.5 rounded-full bg-white hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 text-slate-700 font-medium transition-colors shadow-xs"
-                title="Log in as Rahul (Student)"
-              >
-                Rahul (Student)
-              </button>
-              <button
-                onClick={() => handleQuickLogin('admin')}
-                className="px-2 py-0.5 rounded-full bg-white hover:bg-violet-50 hover:text-violet-600 border border-slate-200 text-slate-700 font-medium transition-colors shadow-xs"
-                title="Log in as Super Admin"
-              >
-                Admin
-              </button>
-            </div>
-
             {!loading && (
               <>
                 {user ? (
                   <div className="flex items-center gap-3 pl-2">
+                    {user.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl}
+                        alt={user.name}
+                        className="w-8 h-8 rounded-full object-cover border-2 border-indigo-200 shadow-2xs"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center border border-indigo-200">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <div className="text-right">
                       <div className="text-sm font-semibold text-slate-800 flex items-center gap-1 justify-end">
                         {user.name}
@@ -188,7 +157,7 @@ export default function Navbar() {
                     </div>
                     <button
                       onClick={handleLogout}
-                      className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                      className="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                       title="Log out"
                     >
                       <LogOut className="w-4 h-4" />
@@ -218,7 +187,8 @@ export default function Navbar() {
           <div className="flex md:hidden items-center gap-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -226,105 +196,106 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Backdrop & Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-slate-200 bg-white px-4 pt-2 pb-6 space-y-3">
-          <Link
-            href="/bundles"
+        <>
+          {/* Backdrop overlay */}
+          <div
+            className="fixed inset-0 top-16 z-40 bg-slate-900/40 backdrop-blur-xs md:hidden"
             onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-slate-100"
-          >
-            Explore Bundles
-          </Link>
-          {user?.role === 'STUDENT' && (
-            <>
-              <Link
-                href="/student/dashboard"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-slate-100"
-              >
-                My Dashboard
-              </Link>
-              <Link
-                href="/student/purchases"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block px-3 py-2 rounded-lg text-base font-medium text-slate-700 hover:bg-slate-100"
-              >
-                My Purchases
-              </Link>
-            </>
-          )}
-          {user?.role === 'ADMIN' && (
+          />
+
+          <div className="relative z-50 md:hidden border-b border-slate-200 bg-white px-4 pt-3 pb-6 space-y-2 shadow-xl animate-in slide-in-from-top-2 duration-150">
             <Link
-              href="/admin"
+              href="/bundles"
               onClick={() => setMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-lg text-base font-medium text-indigo-600 font-semibold bg-indigo-50"
+              className={`block px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                pathname === '/bundles'
+                  ? 'bg-indigo-50 text-indigo-600'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`}
             >
-              Admin Portal
+              Explore Bundles
             </Link>
-          )}
-
-          <div className="pt-3 border-t border-slate-200">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-              Quick Switch Demo User
-            </p>
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={() => {
-                  handleQuickLogin('student');
-                  setMobileMenuOpen(false);
-                }}
-                className="flex-1 py-1.5 text-xs bg-slate-100 hover:bg-indigo-50 text-slate-700 rounded-md font-medium text-center"
-              >
-                Rahul (Student)
-              </button>
-              <button
-                onClick={() => {
-                  handleQuickLogin('admin');
-                  setMobileMenuOpen(false);
-                }}
-                className="flex-1 py-1.5 text-xs bg-slate-100 hover:bg-violet-50 text-slate-700 rounded-md font-medium text-center"
-              >
-                Admin
-              </button>
-            </div>
-
-            {user ? (
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-sm text-slate-800">{user.name}</div>
-                  <div className="text-xs text-slate-500">{user.email}</div>
-                </div>
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="px-3 py-1.5 text-xs text-rose-600 bg-rose-50 rounded-md font-medium"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
+            {user?.role === 'STUDENT' && (
+              <>
                 <Link
-                  href="/login"
+                  href="/student/dashboard"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="py-2 text-center text-sm font-medium border border-slate-200 rounded-lg text-slate-700"
+                  className={`block px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                    pathname === '/student/dashboard'
+                      ? 'bg-indigo-50 text-indigo-600'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  }`}
                 >
-                  Login
+                  My Dashboard
                 </Link>
                 <Link
-                  href="/register"
+                  href="/student/purchases"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="py-2 text-center text-sm font-semibold bg-indigo-600 text-white rounded-lg shadow-sm"
+                  className={`block px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                    pathname === '/student/purchases'
+                      ? 'bg-indigo-50 text-indigo-600'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  }`}
                 >
-                  Register
+                  My Purchases
                 </Link>
-              </div>
+              </>
             )}
+            {user?.role === 'ADMIN' && (
+              <Link
+                href="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-bold transition-colors ${
+                  pathname.startsWith('/admin')
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                }`}
+              >
+                <ShieldAlert className="w-4 h-4" />
+                <span>Admin Portal</span>
+              </Link>
+            )}
+
+            <div className="pt-3 border-t border-slate-200 mt-2">
+              {user ? (
+                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="min-w-0 pr-2">
+                    <div className="font-bold text-sm text-slate-800 truncate">{user.name}</div>
+                    <div className="text-xs text-slate-500 truncate">{user.email}</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="px-3 py-1.5 text-xs text-rose-600 bg-white hover:bg-rose-50 border border-rose-200 rounded-lg font-bold shrink-0 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="py-2.5 text-center text-sm font-semibold border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="py-2.5 text-center text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition-colors"
+                  >
+                    Register
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </header>
   );

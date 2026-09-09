@@ -350,24 +350,24 @@ export default function BulkUploadQuestionsPage() {
       )}
 
       {/* Target Destination Setup */}
-      <div className="bg-white border border-slate-200 shadow-xs rounded-2xl p-6">
+      <div className="bg-white border border-slate-200 shadow-xs rounded-2xl p-4 sm:p-6">
         <h2 className="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-black">
             1
           </span>
           Select Destination Curriculum
         </h2>
-        <p className="text-xs text-slate-500 mb-4 ml-8">
+        <p className="text-xs text-slate-500 mb-4 ml-0 sm:ml-8">
           Imported questions will be associated with this Exam, Subject, and Topic hierarchy.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ml-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ml-0 sm:ml-8">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">Exam</label>
             <select
               value={selectedExamId}
               onChange={(e) => handleExamChange(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition min-h-[40px]"
             >
               {safeExams.map((e) => (
                 <option key={e.id} value={e.id}>
@@ -382,7 +382,7 @@ export default function BulkUploadQuestionsPage() {
             <select
               value={selectedSubjectId}
               onChange={(e) => handleSubjectChange(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition min-h-[40px]"
               disabled={availableSubjects.length === 0}
             >
               {availableSubjects.map((s) => (
@@ -398,7 +398,7 @@ export default function BulkUploadQuestionsPage() {
             <select
               value={selectedTopicId}
               onChange={(e) => setSelectedTopicId(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition min-h-[40px]"
               disabled={availableTopics.length === 0}
             >
               {availableTopics.map((t) => (
@@ -412,21 +412,21 @@ export default function BulkUploadQuestionsPage() {
       </div>
 
       {/* CSV File Upload Section */}
-      <div className="bg-white border border-slate-200 shadow-xs rounded-2xl p-6">
+      <div className="bg-white border border-slate-200 shadow-xs rounded-2xl p-4 sm:p-6">
         <h2 className="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-black">
             2
           </span>
           Select or Paste CSV Data
         </h2>
-        <p className="text-xs text-slate-500 mb-4 ml-8">
+        <p className="text-xs text-slate-500 mb-4 ml-0 sm:ml-8">
           Upload your .csv file with columns:{' '}
-          <code className="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-mono text-[11px]">
+          <code className="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-mono text-[11px] break-all">
             question, option a, option b, option c, option d, answer, explanation, difficulty, tags
           </code>.
         </p>
 
-        <div className="ml-8 space-y-4">
+        <div className="ml-0 sm:ml-8 space-y-4">
           <div className="border-2 border-dashed border-slate-300 hover:border-indigo-500 rounded-2xl p-8 text-center transition bg-slate-50/60 relative">
             <input
               type="file"

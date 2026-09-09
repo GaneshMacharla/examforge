@@ -34,6 +34,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!user.passwordHash) {
+      return NextResponse.json(
+        { error: 'This account uses OAuth authentication. Please sign in with Google or your OAuth provider.' },
+        { status: 400 }
+      );
+    }
+
     const isValid = comparePassword(password, user.passwordHash);
     if (!isValid) {
       return NextResponse.json(

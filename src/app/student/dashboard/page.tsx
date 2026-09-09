@@ -18,6 +18,7 @@ import {
   Smartphone,
   ShieldCheck,
 } from 'lucide-react';
+import { Skeleton, StatCardSkeleton, TableSkeleton } from '@/components/Skeleton';
 
 interface StudentDashboardData {
   user: { id: string; name: string; email: string; targetExam: string };
@@ -88,13 +89,24 @@ export default function StudentDashboardPage() {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-12 space-y-6">
-        <div className="h-40 rounded-3xl bg-white border border-slate-200 animate-pulse" />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 rounded-2xl bg-white border border-slate-200 animate-pulse" />
-          ))}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 animate-fade-in">
+        {/* Welcome Banner Skeleton */}
+        <div className="rounded-3xl bg-slate-900 text-white p-6 sm:p-8 space-y-3 shadow-xl">
+          <Skeleton className="h-5 w-40 rounded-full animate-shimmer-dark" />
+          <Skeleton className="h-8 w-64 rounded-lg animate-shimmer-dark" />
+          <Skeleton className="h-4 w-96 max-w-full rounded-md animate-shimmer-dark" />
         </div>
+
+        {/* 4 Stat Cards Skeleton */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+          <StatCardSkeleton />
+        </div>
+
+        {/* Recent Attempts Table Skeleton */}
+        <TableSkeleton rows={3} />
       </div>
     );
   }
@@ -102,7 +114,7 @@ export default function StudentDashboardPage() {
   if (!data) return null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 animate-fade-in">
       {/* 1. WELCOME BANNER */}
       <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl relative overflow-hidden">
         <div className="space-y-2 relative z-10">
@@ -142,29 +154,29 @@ export default function StudentDashboardPage() {
           <span>Your Performance Overview</span>
         </h2>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Questions Attempted</span>
-            <div className="text-2xl font-black text-slate-900">{data.stats.questionsAttempted}</div>
-            <div className="text-[11px] text-slate-500 font-medium">Across all test sessions</div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase">Questions Attempted</span>
+            <div className="text-xl sm:text-2xl font-black text-slate-900">{data.stats.questionsAttempted}</div>
+            <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Across all sessions</div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Correct Answers</span>
-            <div className="text-2xl font-black text-emerald-600">{data.stats.totalCorrect}</div>
-            <div className="text-[11px] text-emerald-700 font-medium">Verified solutions</div>
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase">Correct Answers</span>
+            <div className="text-xl sm:text-2xl font-black text-emerald-600">{data.stats.totalCorrect}</div>
+            <div className="text-[10px] sm:text-[11px] text-emerald-700 font-medium">Verified solutions</div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Overall Accuracy</span>
-            <div className="text-2xl font-black text-indigo-600">{data.stats.accuracy}%</div>
-            <div className="text-[11px] text-slate-500 font-medium">Target: &gt; 80%</div>
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase">Overall Accuracy</span>
+            <div className="text-xl sm:text-2xl font-black text-indigo-600">{data.stats.accuracy}%</div>
+            <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Target: &gt; 80%</div>
           </div>
 
-          <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
-            <span className="text-xs font-semibold text-slate-400 uppercase">Unlocked Bundles</span>
-            <div className="text-2xl font-black text-purple-600">{data.myBundles.length}</div>
-            <div className="text-[11px] text-slate-500 font-medium">Lifetime access active</div>
+          <div className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-1">
+            <span className="text-[10px] sm:text-xs font-semibold text-slate-400 uppercase">Unlocked Bundles</span>
+            <div className="text-xl sm:text-2xl font-black text-purple-600">{data.myBundles.length}</div>
+            <div className="text-[10px] sm:text-[11px] text-slate-500 font-medium">Lifetime access</div>
           </div>
         </div>
       </div>
@@ -283,16 +295,16 @@ export default function StudentDashboardPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
+                  <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                    <div className="text-left sm:text-right">
                       <div className="text-sm font-black text-slate-900">
                         {att.score} / {att.totalQuestions}
                       </div>
-                      <div className="text-xs font-semibold text-emerald-600">{att.accuracy}% Accuracy</div>
+                      <div className="text-[11px] sm:text-xs font-semibold text-emerald-600">{att.accuracy}% Accuracy</div>
                     </div>
                     <Link
                       href={`/practice/${att.bundleId}/results/${att.id}`}
-                      className="px-3 py-1.5 rounded-lg border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 text-xs font-semibold transition-colors"
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 text-xs font-semibold transition-colors shrink-0"
                     >
                       View Review
                     </Link>

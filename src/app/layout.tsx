@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Script from 'next/script';
@@ -6,6 +6,13 @@ import Script from 'next/script';
 export const metadata: Metadata = {
   title: 'ExamForge — Competitive Exam Practice Question Bundles',
   description: 'High-quality practice question bundles for SSC, Banking, RRB, and State PSC exams with step-by-step solutions.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#4f46e5',
 };
 
 export default function RootLayout({
@@ -18,9 +25,9 @@ export default function RootLayout({
       <head>
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       </head>
-      <body className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-indigo-500 selection:text-white">
+      <body className="min-h-screen flex flex-col bg-slate-50 text-slate-900 selection:bg-indigo-500 selection:text-white antialiased overflow-x-hidden">
         <Navbar />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 w-full max-w-full overflow-x-hidden">{children}</main>
         <footer className="border-t border-slate-200 bg-white py-8 text-center text-sm text-slate-500">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
