@@ -17,6 +17,7 @@ import {
   ArrowRight,
   BookOpen,
 } from 'lucide-react';
+import { TestResultsSkeleton } from '@/components/Skeleton';
 
 interface AttemptData {
   id: string;
@@ -81,16 +82,12 @@ export default function TestResultsPage() {
   }, [attemptId]);
 
   if (loading) {
-    return (
-      <div className="max-w-5xl mx-auto px-4 py-16 space-y-6">
-        <div className="h-48 rounded-3xl bg-white border border-slate-200 animate-pulse" />
-      </div>
-    );
+    return <TestResultsSkeleton />;
   }
 
   if (!data) {
     return (
-      <div className="max-w-md mx-auto px-4 py-20 text-center space-y-4">
+      <div className="max-w-md mx-auto px-4 py-20 text-center space-y-4 animate-fade-in">
         <HelpCircle className="w-12 h-12 text-slate-400 mx-auto" />
         <h2 className="text-xl font-bold text-slate-800">Results Not Found</h2>
         <Link href="/student/dashboard" className="text-xs font-semibold text-indigo-600 hover:underline">
@@ -108,7 +105,7 @@ export default function TestResultsPage() {
   });
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 animate-fade-in">
       {/* 1. HERO RESULT CARD */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-lg text-center space-y-6 relative overflow-hidden">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider">

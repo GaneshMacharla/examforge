@@ -175,4 +175,85 @@ export function PurchasedBundleSkeleton() {
   );
 }
 
+// Exact Skeleton for Practice Test Results Page
+export function TestResultsSkeleton() {
+  return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10 animate-fade-in">
+      {/* 1. Hero Card Skeleton */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-lg text-center space-y-6">
+        {/* Badge */}
+        <Skeleton className="h-6 w-36 rounded-full mx-auto" />
+
+        {/* Title and Date */}
+        <div className="space-y-2 max-w-md mx-auto">
+          <Skeleton className="h-8 w-full rounded-xl" />
+          <Skeleton className="h-4 w-48 rounded-md mx-auto" />
+        </div>
+
+        {/* 5 Metric Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-3 max-w-3xl mx-auto pt-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+              <Skeleton className="h-3 w-14 rounded-sm mx-auto" />
+              <Skeleton className="h-7 sm:h-8 w-16 rounded-lg mx-auto" />
+            </div>
+          ))}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-2 max-w-sm mx-auto">
+          <Skeleton className="h-11 w-full sm:w-44 rounded-xl" />
+          <Skeleton className="h-11 w-full sm:w-40 rounded-xl" />
+        </div>
+      </div>
+
+      {/* 2. Question Review Header Skeleton */}
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-1.5">
+            <Skeleton className="h-6 w-52 rounded-lg" />
+            <Skeleton className="h-3.5 w-72 rounded-md" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-16 rounded-lg" />
+            <Skeleton className="h-8 w-20 rounded-lg" />
+            <Skeleton className="h-8 w-24 rounded-lg" />
+          </div>
+        </div>
+
+        {/* Question Review Cards */}
+        <div className="space-y-5">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="p-6 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-6 w-24 rounded-lg" />
+                  <Skeleton className="h-4 w-32 rounded-md" />
+                </div>
+                <Skeleton className="h-6 w-24 rounded-lg" />
+              </div>
+              <div className="space-y-2 py-1">
+                <Skeleton className="h-4 w-full rounded-md" />
+                <Skeleton className="h-4 w-4/5 rounded-md" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+                <Skeleton className="h-12 w-full rounded-xl" />
+                <Skeleton className="h-12 w-full rounded-xl" />
+                <Skeleton className="h-12 w-full rounded-xl" />
+                <Skeleton className="h-12 w-full rounded-xl" />
+              </div>
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2 mt-3">
+                <Skeleton className="h-3.5 w-28 rounded-sm" />
+                <Skeleton className="h-3 w-full rounded-sm" />
+                <Skeleton className="h-3 w-3/4 rounded-sm" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 
