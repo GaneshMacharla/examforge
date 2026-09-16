@@ -32,6 +32,24 @@ function LoginForm() {
   const [loginError, setLoginError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Redirect if already authenticated
+    fetch('/api/auth/me')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user) {
+          const dest =
+            data.user.role === 'ADMIN'
+              ? '/admin'
+              : redirect.startsWith('/login')
+                ? '/student/dashboard'
+                : redirect;
+          router.replace(dest);
+        }
+      })
+      .catch(() => {});
+  }, [redirect, router]);
+
+  useEffect(() => {
     if (urlError === 'DEVICE_LIMIT_EXCEEDED') {
       setDeviceLimitModalOpen(true);
     }
