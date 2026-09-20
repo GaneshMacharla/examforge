@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Upload,
   FileSpreadsheet,
@@ -12,19 +13,25 @@ import {
   RefreshCw,
   FileCheck,
   AlertCircle,
+  Layers,
+  Plus,
+  Eye,
+  Check,
 } from 'lucide-react';
+
+interface Bundle {
+  id: string;
+  name: string;
+  price: number;
+  difficulty: string;
+  subjectName?: string;
+  questionCount: number;
+  exam: { id: string; name: string; code: string };
+}
 
 interface Exam {
   id: string;
   name: string;
-  subjects: {
-    id: string;
-    name: string;
-    topics: {
-      id: string;
-      name: string;
-    }[];
-  }[];
 }
 
 interface ValidatedRow {
@@ -45,11 +52,26 @@ interface ValidationError {
   raw: any;
 }
 
-export default function BulkUploadQuestionsPage() {
+function BulkUploadContent() {
+  const searchParams = useSearchParams();
+  const urlBundleId = searchParams.get('bundleId');
+
+  const [bundles, setBundles] = useState<Bundle[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
-  const [selectedExamId, setSelectedExamId] = useState('');
-  const [selectedSubjectId, setSelectedSubjectId] = useState('');
-  const [selectedTopicId, setSelectedTopicId] = useState('');
+  const [selectedBundleId, setSelectedBundleId] = useState<string>('');
+  const [loadingBundles, setLoadingBundles] = useState(true);
+
+  // Quick Inline Bundle Creation State
+  const [showCreateBundle, setShowCreateBundle] = useState(false);
+  const [creatingBundle, setCreatingBundle] = useState(false);
+  const [newBundleData, setNewBundleData] = useState({
+    name: '',
+    description: '',
+    examId: '',
+    subjectName: 'General Studies',
+    difficulty: 'Mixed',
+    price: 49,
+  });
 
   const [csvContent, setCsvContent] = useState('');
   const [fileName, setFileName] = useState('');
@@ -66,78 +88,94 @@ export default function BulkUploadQuestionsPage() {
 
   const [importStatus, setImportStatus] = useState<{
     success: boolean;
+    importedCount: number;
+    bundleId: string;
+    bundleName: string;
     message: string;
   } | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    fetchCurriculum();
+    fetchInitialData();
   }, []);
 
-  const fetchCurriculum = async () => {
+  const fetchInitialData = async () => {
+    setLoadingBundles(true);
     try {
-      const res = await fetch('/api/admin/curriculum');
-      if (res.ok) {
-        const data = await res.json();
-        const examList: Exam[] = Array.isArray(data.exams)
-          ? data.exams
-          : Array.isArray(data)
-          ? data
-          : [];
-        setExams(examList);
-        if (examList.length > 0) {
-          setSelectedExamId(examList[0].id);
-          if (examList[0].subjects && examList[0].subjects.length > 0) {
-            setSelectedSubjectId(examList[0].subjects[0].id);
-            if (
-              examList[0].subjects[0].topics &&
-              examList[0].subjects[0].topics.length > 0
-            ) {
-              setSelectedTopicId(examList[0].subjects[0].topics[0].id);
-            }
-          }
-        }
+      const [bundlesRes, examsRes] = await Promise.all([
+        fetch('/api/admin/bundles'),
+        fetch('/api/exams'),
+      ]);
+
+      const [bundlesData, examsData] = await Promise.all([
+        bundlesRes.json(),
+        examsRes.json(),
+      ]);
+
+      const loadedBundles: Bundle[] = bundlesData.bundles || [];
+      const loadedExams: Exam[] = examsData.exams || [];
+
+      setBundles(loadedBundles);
+      setExams(loadedExams);
+
+      if (loadedExams.length > 0) {
+        setNewBundleData((prev) => ({ ...prev, examId: loadedExams[0].id }));
+      }
+
+      // If URL specified a bundleId, auto-select it
+      if (urlBundleId && loadedBundles.some((b) => b.id === urlBundleId)) {
+        setSelectedBundleId(urlBundleId);
+      } else if (loadedBundles.length > 0) {
+        setSelectedBundleId(loadedBundles[0].id);
+      } else {
+        // If no bundles exist yet, default open the quick create bundle form
+        setShowCreateBundle(true);
       }
     } catch (err) {
-      console.error('Failed to load curriculum', err);
+      console.error('Failed to load initial data', err);
+    } finally {
+      setLoadingBundles(false);
     }
   };
 
-  const safeExams = Array.isArray(exams) ? exams : [];
-  const selectedExam = safeExams.find((e) => e.id === selectedExamId);
-  const availableSubjects =
-    selectedExam && Array.isArray(selectedExam.subjects)
-      ? selectedExam.subjects
-      : [];
-  const selectedSubject = availableSubjects.find((s) => s.id === selectedSubjectId);
-  const availableTopics =
-    selectedSubject && Array.isArray(selectedSubject.topics)
-      ? selectedSubject.topics
-      : [];
+  const handleQuickCreateBundle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBundleData.name.trim() || !newBundleData.examId) return;
 
-  const handleExamChange = (examId: string) => {
-    setSelectedExamId(examId);
-    const exam = safeExams.find((e) => e.id === examId);
-    if (exam && exam.subjects && exam.subjects.length > 0) {
-      setSelectedSubjectId(exam.subjects[0].id);
-      if (exam.subjects[0].topics && exam.subjects[0].topics.length > 0) {
-        setSelectedTopicId(exam.subjects[0].topics[0].id);
-      } else {
-        setSelectedTopicId('');
+    setCreatingBundle(true);
+    setErrorMsg('');
+
+    try {
+      const res = await fetch('/api/admin/bundles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newBundleData),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to create bundle');
       }
-    } else {
-      setSelectedSubjectId('');
-      setSelectedTopicId('');
-    }
-  };
 
-  const handleSubjectChange = (subjectId: string) => {
-    setSelectedSubjectId(subjectId);
-    const subject = availableSubjects.find((s) => s.id === subjectId);
-    if (subject && subject.topics && subject.topics.length > 0) {
-      setSelectedTopicId(subject.topics[0].id);
-    } else {
-      setSelectedTopicId('');
+      // Reload bundles and select the newly created bundle
+      const updatedBundlesRes = await fetch('/api/admin/bundles');
+      const updatedBundlesData = await updatedBundlesRes.json();
+      const updatedList = updatedBundlesData.bundles || [];
+      setBundles(updatedList);
+      setSelectedBundleId(data.bundle.id);
+      setShowCreateBundle(false);
+      setNewBundleData({
+        name: '',
+        description: '',
+        examId: exams[0]?.id || '',
+        subjectName: 'General Studies',
+        difficulty: 'Mixed',
+        price: 49,
+      });
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Failed to create bundle');
+    } finally {
+      setCreatingBundle(false);
     }
   };
 
@@ -172,27 +210,27 @@ export default function BulkUploadQuestionsPage() {
     ];
 
     const sampleRow1 = [
-      '"What is the value of 15% of 240?"',
-      '"32"',
-      '"36"',
-      '"40"',
-      '"42"',
+      '"What is the speed of sound in dry air at 20 degrees Celsius?"',
+      '"Approx 300 m/s"',
+      '"Approx 343 m/s"',
+      '"Approx 420 m/s"',
+      '"Approx 1500 m/s"',
       '"B"',
-      '"15% of 240 = (15/100) * 240 = 36."',
+      '"At 20 degrees Celsius, speed of sound is approximately 343 m/s."',
       '"Easy"',
-      '"Percentages, SSC CGL 2023"',
+      '"General Science, Physics"',
     ];
 
     const sampleRow2 = [
-      '"If A and B can complete a work in 12 days and B alone can do it in 20 days, how many days will A alone take?"',
+      '"A and B can do a work in 12 days, B alone in 20 days. In how many days can A alone do it?"',
       '"25 days"',
       '"30 days"',
       '"35 days"',
       '"28 days"',
       '"B"',
-      '"1/A = 1/12 - 1/20 = (5-3)/60 = 2/60 = 1/30. Hence, A alone takes 30 days."',
+      '"1/A = 1/12 - 1/20 = 2/60 = 1/30. Hence A alone takes 30 days."',
       '"Medium"',
-      '"Time and Work, Banking"',
+      '"Quantitative Aptitude, Time and Work"',
     ];
 
     const csvData = [headers.join(','), sampleRow1.join(','), sampleRow2.join(',')].join('\n');
@@ -200,7 +238,7 @@ export default function BulkUploadQuestionsPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', 'questions_upload_template.csv');
+    link.setAttribute('download', 'practice_questions_template.csv');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -245,8 +283,8 @@ export default function BulkUploadQuestionsPage() {
       return;
     }
 
-    if (!selectedSubjectId || !selectedTopicId) {
-      setErrorMsg('Please select a Subject and Topic target before importing.');
+    if (!selectedBundleId) {
+      setErrorMsg('Please select a Target Bundle to import questions into.');
       return;
     }
 
@@ -259,8 +297,7 @@ export default function BulkUploadQuestionsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'import',
-          subjectId: selectedSubjectId,
-          topicId: selectedTopicId,
+          bundleId: selectedBundleId,
           validRowsToImport: validationResult.validRows,
         }),
       });
@@ -272,11 +309,21 @@ export default function BulkUploadQuestionsPage() {
 
       setImportStatus({
         success: true,
-        message: data.message || `Successfully imported ${data.importedCount} questions!`,
+        importedCount: data.importedCount,
+        bundleId: data.bundleId,
+        bundleName: data.bundleName,
+        message: data.message || `Successfully imported ${data.importedCount} questions straight into bundle!`,
       });
       setValidationResult(null);
       setCsvContent('');
       setFileName('');
+
+      // Refresh bundles list to reflect new question count
+      const updatedBundlesRes = await fetch('/api/admin/bundles');
+      const updatedBundlesData = await updatedBundlesRes.json();
+      if (updatedBundlesData.bundles) {
+        setBundles(updatedBundlesData.bundles);
+      }
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to import questions');
     } finally {
@@ -284,25 +331,27 @@ export default function BulkUploadQuestionsPage() {
     }
   };
 
+  const selectedBundle = bundles.find((b) => b.id === selectedBundleId);
+
   return (
     <div className="space-y-8 max-w-6xl">
-      {/* Header */}
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
             <Link
-              href="/admin/questions"
+              href="/admin/bundles"
               className="text-slate-500 hover:text-indigo-600 transition flex items-center gap-1 text-xs font-semibold"
             >
-              <ArrowLeft className="w-4 h-4" /> Back to Question Bank
+              <ArrowLeft className="w-4 h-4" /> Back to Bundle Manager
             </Link>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-3">
             <Upload className="w-8 h-8 text-indigo-600" />
-            Bulk Question Uploader
+            Bulk CSV Question Uploader
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Upload questions in bulk via CSV format with automated pre-validation and error detection.
+            Upload CSV question batches directly into your practice bundles without picking questions by hand.
           </p>
         </div>
 
@@ -316,7 +365,7 @@ export default function BulkUploadQuestionsPage() {
       </div>
 
       {errorMsg && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 flex items-start gap-3">
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 flex items-start gap-3 animate-fade-in">
           <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
           <div>
             <p className="font-bold text-sm">Error</p>
@@ -325,101 +374,210 @@ export default function BulkUploadQuestionsPage() {
         </div>
       )}
 
+      {/* SUCCESS BANNER WITH DIRECT BUNDLE PRACTICE LINK */}
       {importStatus && (
-        <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 flex items-start gap-4">
-          <CheckCircle2 className="w-6 h-6 mt-0.5 shrink-0 text-emerald-600" />
-          <div className="flex-1">
-            <h3 className="font-black text-base text-emerald-900">Import Successful!</h3>
-            <p className="text-xs mt-1 text-emerald-700">{importStatus.message}</p>
-            <div className="mt-4 flex gap-3">
-              <Link
-                href="/admin/questions"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition"
-              >
-                View in Question Bank
-              </Link>
-              <Link
-                href="/admin/bundles"
-                className="bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold px-4 py-2 rounded-xl transition border border-slate-300"
-              >
-                Create Bundle With These Questions
-              </Link>
+        <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-3xl text-emerald-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm animate-fade-in">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-7 h-7" />
             </div>
+            <div>
+              <h3 className="font-black text-lg text-emerald-950">Questions Linked Directly to Bundle!</h3>
+              <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
+                {importStatus.message}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
+            <Link
+              href={`/practice/${importStatus.bundleId}`}
+              target="_blank"
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+            >
+              <Eye className="w-4 h-4" />
+              <span>Preview / Test Practice</span>
+            </Link>
+            <Link
+              href="/admin/bundles"
+              className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition border border-slate-300"
+            >
+              View in Bundle Manager
+            </Link>
           </div>
         </div>
       )}
 
-      {/* Target Destination Setup */}
-      <div className="bg-white border border-slate-200 shadow-xs rounded-2xl p-4 sm:p-6">
-        <h2 className="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
-          <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-black">
-            1
-          </span>
-          Select Destination Curriculum
-        </h2>
-        <p className="text-xs text-slate-500 mb-4 ml-0 sm:ml-8">
-          Imported questions will be associated with this Exam, Subject, and Topic hierarchy.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 ml-0 sm:ml-8">
+      {/* STEP 1: SELECT TARGET BUNDLE */}
+      <div className="bg-white border border-slate-200 shadow-xs rounded-2xl p-4 sm:p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">Exam</label>
-            <select
-              value={selectedExamId}
-              onChange={(e) => handleExamChange(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition min-h-[40px]"
-            >
-              {safeExams.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.name}
-                </option>
-              ))}
-            </select>
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-black">
+                1
+              </span>
+              Select Target Practice Bundle
+            </h2>
+            <p className="text-xs text-slate-500 ml-0 sm:ml-8 mt-0.5">
+              All questions from the CSV will be automatically attached directly into this bundle.
+            </p>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">Subject</label>
-            <select
-              value={selectedSubjectId}
-              onChange={(e) => handleSubjectChange(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition min-h-[40px]"
-              disabled={availableSubjects.length === 0}
-            >
-              {availableSubjects.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowCreateBundle(!showCreateBundle)}
+            className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 ml-0 sm:ml-auto cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>{showCreateBundle ? 'Hide Bundle Form' : '+ Create New Bundle'}</span>
+          </button>
+        </div>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">Topic</label>
-            <select
-              value={selectedTopicId}
-              onChange={(e) => setSelectedTopicId(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-indigo-500 focus:bg-white transition min-h-[40px]"
-              disabled={availableTopics.length === 0}
-            >
-              {availableTopics.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Quick Inline Bundle Creation Box */}
+        {showCreateBundle && (
+          <form
+            onSubmit={handleQuickCreateBundle}
+            className="ml-0 sm:ml-8 p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-3 animate-fade-in"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-indigo-950 uppercase tracking-wider">
+                Quick Create Bundle
+              </span>
+              <span className="text-[11px] text-indigo-600">
+                Create now and auto-select for upload
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. RRB NTPC General Science Set 1"
+                  value={newBundleData.name}
+                  onChange={(e) => setNewBundleData({ ...newBundleData, name: e.target.value })}
+                  className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Exam</label>
+                <select
+                  value={newBundleData.examId}
+                  onChange={(e) => setNewBundleData({ ...newBundleData, examId: e.target.value })}
+                  className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {exams.map((ex) => (
+                    <option key={ex.id} value={ex.id}>
+                      {ex.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Subject</label>
+                <input
+                  type="text"
+                  placeholder="e.g. General Science"
+                  value={newBundleData.subjectName}
+                  onChange={(e) => setNewBundleData({ ...newBundleData, subjectName: e.target.value })}
+                  className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">Price (₹ INR)</label>
+                <input
+                  type="number"
+                  min={1}
+                  required
+                  value={newBundleData.price}
+                  onChange={(e) => setNewBundleData({ ...newBundleData, price: parseInt(e.target.value) || 0 })}
+                  className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="submit"
+                disabled={creatingBundle}
+                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition disabled:opacity-50 flex items-center gap-1.5"
+              >
+                {creatingBundle ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                <span>Create & Select Bundle</span>
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Bundle Selector Dropdown */}
+        <div className="ml-0 sm:ml-8 space-y-3">
+          {loadingBundles ? (
+            <div className="h-10 bg-slate-100 rounded-xl animate-pulse" />
+          ) : bundles.length === 0 ? (
+            <div className="p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 text-xs">
+              No bundles created yet. Use the <strong>+ Create New Bundle</strong> button above to create one before uploading!
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Choose Bundle
+                </label>
+                <select
+                  value={selectedBundleId}
+                  onChange={(e) => setSelectedBundleId(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:border-indigo-500 focus:bg-white transition"
+                >
+                  {bundles.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name} — [{b.exam?.name || 'Exam'}] (₹{b.price} • {b.questionCount} Questions currently)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Selected Bundle Summary Badge */}
+              {selectedBundle && (
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-lg bg-indigo-100 text-indigo-700">
+                      <Layers className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900">{selectedBundle.name}</p>
+                      <p className="text-[11px] text-slate-500">
+                        Exam: <span className="font-semibold text-slate-700">{selectedBundle.exam?.name}</span> •
+                        Subject: <span className="font-semibold text-slate-700">{selectedBundle.subjectName || 'General'}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="font-black text-slate-900">₹{selectedBundle.price}</span>
+                    <span className="px-2 py-0.5 rounded-full font-bold bg-indigo-50 text-indigo-700 text-[11px]">
+                      {selectedBundle.questionCount} Questions in bundle
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* CSV File Upload Section */}
-      <div className="bg-white border border-slate-200 shadow-xs rounded-2xl p-4 sm:p-6">
+      {/* STEP 2: CSV UPLOAD / PASTE */}
+      <div className="bg-white border border-slate-200 shadow-xs rounded-2xl p-4 sm:p-6 space-y-4">
         <h2 className="text-base font-bold text-slate-900 mb-1 flex items-center gap-2">
           <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-black">
             2
           </span>
           Select or Paste CSV Data
         </h2>
-        <p className="text-xs text-slate-500 mb-4 ml-0 sm:ml-8">
+        <p className="text-xs text-slate-500 ml-0 sm:ml-8">
           Upload your .csv file with columns:{' '}
           <code className="text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded font-mono text-[11px] break-all">
             question, option a, option b, option c, option d, answer, explanation, difficulty, tags
@@ -451,61 +609,60 @@ export default function BulkUploadQuestionsPage() {
             </div>
           </div>
 
-          <details className="text-xs text-slate-500 group">
-            <summary className="cursor-pointer hover:text-slate-800 transition select-none flex items-center gap-1 font-bold">
-              Or paste raw CSV text directly ▾
-            </summary>
-            <div className="mt-3">
-              <textarea
-                value={csvContent}
-                onChange={(e) => {
-                  setCsvContent(e.target.value);
-                  setValidationResult(null);
-                }}
-                rows={6}
-                placeholder={`question,option a,option b,option c,option d,answer,explanation,difficulty,tags\n"What is 2+2?","3","4","5","6","B","2+2 is 4","Easy","Arithmetic"`}
-                className="w-full bg-slate-50 font-mono text-xs text-slate-800 border border-slate-200 rounded-xl p-3 focus:outline-none focus:border-indigo-500 focus:bg-white"
-              />
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold text-slate-700">Or Paste Raw CSV Data Directly</label>
+              {csvContent && (
+                <button
+                  onClick={() => {
+                    setCsvContent('');
+                    setFileName('');
+                    setValidationResult(null);
+                  }}
+                  className="text-[11px] font-bold text-rose-600 hover:underline"
+                >
+                  Clear
+                </button>
+              )}
             </div>
-          </details>
+            <textarea
+              rows={4}
+              value={csvContent}
+              onChange={(e) => {
+                setCsvContent(e.target.value);
+                setValidationResult(null);
+                setImportStatus(null);
+              }}
+              placeholder='question,option a,option b,option c,option d,answer,explanation,difficulty,tags&#10;"What is the SI unit of power?","Joule","Watt","Newton","Pascal","B","Watt is the SI unit of power.","Easy","Physics, Units"'
+              className="w-full font-mono text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500 focus:bg-white transition"
+            />
+          </div>
 
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex justify-end gap-3 pt-2">
             <button
               onClick={handleValidate}
               disabled={!csvContent.trim() || isValidating}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-2 shadow-xs cursor-pointer"
+              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-6 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-2 shadow-xs cursor-pointer"
             >
               {isValidating ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  Validating CSV...
+                  Validating CSV Rows...
                 </>
               ) : (
                 <>
                   <FileCheck className="w-4 h-4" />
-                  Validate & Preview Data
+                  Validate & Preview Rows
                 </>
               )}
             </button>
-            {fileName && (
-              <button
-                onClick={() => {
-                  setCsvContent('');
-                  setFileName('');
-                  setValidationResult(null);
-                }}
-                className="text-xs text-slate-400 hover:text-slate-600 transition"
-              >
-                Clear file
-              </button>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Validation Results & Preview */}
+      {/* STEP 3: VALIDATION SUMMARY & COMMIT DIRECTLY INTO BUNDLE */}
       {validationResult && (
-        <div className="bg-white border border-slate-200 shadow-xs rounded-2xl p-6 space-y-6">
+        <div className="bg-white border border-slate-200 shadow-xs rounded-2xl p-6 space-y-6 animate-fade-in">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
             <div>
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -515,24 +672,24 @@ export default function BulkUploadQuestionsPage() {
                 Validation Summary
               </h2>
               <p className="text-xs text-slate-500 ml-8 mt-0.5">
-                Review verified rows and any detected format errors before committing into the Question Bank.
+                Target Bundle: <strong className="text-indigo-600">{selectedBundle?.name}</strong>. Ready to import and link automatically.
               </p>
             </div>
 
             <button
               onClick={handleImport}
-              disabled={validationResult.validCount === 0 || isImporting}
+              disabled={validationResult.validCount === 0 || isImporting || !selectedBundleId}
               className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-6 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-2 shadow-xs cursor-pointer"
             >
               {isImporting ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  Importing {validationResult.validCount} Questions...
+                  Importing to Bundle...
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  Import {validationResult.validCount} Valid Questions
+                  Import {validationResult.validCount} Questions Straight into Bundle
                 </>
               )}
             </button>
@@ -545,7 +702,7 @@ export default function BulkUploadQuestionsPage() {
               <p className="text-2xl font-black text-slate-900 mt-1">{validationResult.totalDetected}</p>
             </div>
             <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
-              <p className="text-xs text-emerald-700 font-bold uppercase">Valid Ready to Import</p>
+              <p className="text-xs text-emerald-700 font-bold uppercase">Valid Ready for Bundle</p>
               <p className="text-2xl font-black text-emerald-700 mt-1">
                 {validationResult.validCount}
               </p>
@@ -597,7 +754,7 @@ export default function BulkUploadQuestionsPage() {
             <div className="space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                Valid Questions Preview (Showing first 5 of {validationResult.validCount})
+                Valid Questions Preview (First 5 of {validationResult.validCount})
               </h3>
               <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
                 <table className="w-full text-left text-xs">
@@ -650,5 +807,20 @@ export default function BulkUploadQuestionsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function BulkUploadQuestionsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-4 max-w-6xl animate-pulse">
+          <div className="h-8 bg-slate-200 rounded-xl w-60" />
+          <div className="h-40 bg-slate-100 rounded-2xl" />
+        </div>
+      }
+    >
+      <BulkUploadContent />
+    </Suspense>
   );
 }

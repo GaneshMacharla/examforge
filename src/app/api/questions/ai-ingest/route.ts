@@ -101,6 +101,10 @@ export async function POST(request: Request) {
     let defaultExam = body.examCode || body.examName || body.examId || null;
     let defaultSubject = body.subjectName || body.subjectId || null;
     let defaultTopic = body.topicName || body.topicId || null;
+    let defaultBundle = body.bundleName || body.bundleId || null;
+    let defaultBundlePrice = parseInt(body.bundlePrice || body.price || '49', 10);
+    let defaultBundleDesc = body.bundleDescription || body.description || null;
+    let defaultBundleDifficulty = body.bundleDifficulty || 'Mixed';
 
     if (Array.isArray(body)) {
       rawQuestions = body;
@@ -129,6 +133,7 @@ export async function POST(request: Request) {
     const examCache = new Map<string, any>();
     const subjectCache = new Map<string, any>();
     const topicCache = new Map<string, any>();
+    const bundleCache = new Map<string, any>();
 
     for (let i = 0; i < rawQuestions.length; i++) {
       const q = rawQuestions[i];
@@ -136,6 +141,7 @@ export async function POST(request: Request) {
       const examIdentifier = q.examCode || q.examName || q.examId || defaultExam || 'GENERAL';
       const subjectIdentifier = q.subjectName || q.subjectId || defaultSubject || 'General';
       const topicIdentifier = q.topicName || q.topicId || defaultTopic || 'General Knowledge';
+      const bundleIdentifier = q.bundleName || q.bundleId || defaultBundle || null;
 
       // 1. Resolve Exam
       let exam = examCache.get(examIdentifier.toLowerCase());
@@ -214,7 +220,44 @@ export async function POST(request: Request) {
         topicCache.set(topicKey, topic);
       }
 
-      // 4. Validate Question Fields
+      // 4. Resolve Bundle if specified
+      let bundle: any = null;
+      if (bundleIdentifier) {
+        const bundleKey = `${exam.id}:${bundleIdentifier.toLowerCase()}`;
+        bundle = bundleCache.get(bundleKey);
+        if (!bundle) {
+          bundle = await prisma.bundle.findFirst({
+            where: {
+              OR: [
+                { id: bundleIdentifier },
+                {
+                  examId: exam.id,
+                  name: { equals: bundleIdentifier, mode: 'insensitive' },
+                },
+                { name: { equals: bundleIdentifier, mode: 'insensitive' } },
+              ],
+            },
+          });
+
+          if (!bundle) {
+            bundle = await prisma.bundle.create({
+              data: {
+                name: bundleIdentifier,
+                description: defaultBundleDesc || `Official practice set for ${exam.name} - ${subject.name}`,
+                examId: exam.id,
+                subjectName: subject.name,
+                difficulty: defaultBundleDifficulty,
+                price: isNaN(defaultBundlePrice) ? 49 : defaultBundlePrice,
+                status: 'PUBLISHED',
+                thumbnail: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=600&auto=format&fit=crop&q=80',
+              },
+            });
+          }
+          bundleCache.set(bundleKey, bundle);
+        }
+      }
+
+      // 5. Validate Question Fields
       const questionText = q.questionText?.trim();
       const optionA = q.optionA?.trim() ?? q.options?.[0]?.trim();
       const optionB = q.optionB?.trim() ?? q.options?.[1]?.trim();
@@ -249,9 +292,10 @@ export async function POST(request: Request) {
         continue;
       }
 
-      // 5. Store Question in Database
+      // 6. Store Question in Database
       const savedQuestion = await prisma.question.create({
         data: {
+          examId: exam.id,
           subjectId: subject.id,
           topicId: topic.id,
           questionText,
@@ -267,19 +311,44 @@ export async function POST(request: Request) {
         },
       });
 
+      // 7. Auto-Link to Bundle if applicable
+      if (bundle) {
+        await prisma.bundleQuestion.upsert({
+          where: {
+            bundleId_questionId: {
+              bundleId: bundle.id,
+              questionId: savedQuestion.id,
+            },
+          },
+          update: {},
+          create: {
+            bundleId: bundle.id,
+            questionId: savedQuestion.id,
+          },
+        });
+      }
+
       results.push({
         id: savedQuestion.id,
         exam: exam.name,
         subject: subject.name,
         topic: topic.name,
+        bundle: bundle?.name || null,
         questionText: savedQuestion.questionText,
       });
     }
+
+    const uniqueBundles = Array.from(bundleCache.values()).map((b) => ({
+      id: b.id,
+      name: b.name,
+      examId: b.examId,
+    }));
 
     return NextResponse.json({
       success: true,
       storedCount: results.length,
       failedCount: errors.length,
+      linkedBundles: uniqueBundles,
       savedQuestions: results,
       errors: errors.length > 0 ? errors : undefined,
     }, { status: 201 });

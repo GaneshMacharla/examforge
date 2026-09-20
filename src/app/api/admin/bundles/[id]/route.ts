@@ -65,6 +65,7 @@ export async function PUT(
       status,
       thumbnail,
       questionIds,
+      subjectAllocations,
     } = body;
 
     const updated = await prisma.bundle.update({
@@ -81,7 +82,27 @@ export async function PUT(
       },
     });
 
-    if (questionIds && Array.isArray(questionIds)) {
+    if (subjectAllocations && Array.isArray(subjectAllocations)) {
+      await prisma.bundleQuestion.deleteMany({ where: { bundleId: id } });
+      for (const alloc of subjectAllocations) {
+        if (alloc.subjectId && alloc.count > 0) {
+          const questions = await prisma.question.findMany({
+            where: { subjectId: alloc.subjectId },
+            take: alloc.count,
+            select: { id: true },
+          });
+
+          for (const q of questions) {
+            await prisma.bundleQuestion.create({
+              data: {
+                bundleId: id,
+                questionId: q.id,
+              },
+            });
+          }
+        }
+      }
+    } else if (questionIds && Array.isArray(questionIds)) {
       // Re-link questions
       await prisma.bundleQuestion.deleteMany({ where: { bundleId: id } });
       for (const qId of questionIds) {

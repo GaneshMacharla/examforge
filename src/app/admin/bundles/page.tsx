@@ -1,18 +1,38 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   Layers,
   Plus,
   Edit2,
   Trash2,
-  CheckCircle2,
-  HelpCircle,
   X,
-  Loader2,
   Eye,
+  Upload,
+  BookOpen,
+  CheckCircle2,
+  Sparkles,
+  HelpCircle,
+  Hash,
 } from 'lucide-react';
 import { Skeleton } from '@/components/Skeleton';
+
+interface SubjectItem {
+  id: string;
+  name: string;
+  description?: string;
+  _count?: {
+    questions: number;
+  };
+}
+
+interface ExamWithSubjects {
+  id: string;
+  name: string;
+  code: string;
+  subjects: SubjectItem[];
+}
 
 interface BundleItem {
   id: string;
@@ -29,18 +49,9 @@ interface BundleItem {
   totalRevenue: number;
 }
 
-interface QuestionItem {
-  id: string;
-  questionText: string;
-  difficulty: string;
-  subject: { name: string };
-  topic: { name: string };
-}
-
 export default function AdminBundlesPage() {
   const [bundles, setBundles] = useState<BundleItem[]>([]);
-  const [exams, setExams] = useState<any[]>([]);
-  const [bankQuestions, setBankQuestions] = useState<QuestionItem[]>([]);
+  const [exams, setExams] = useState<ExamWithSubjects[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal State
@@ -55,33 +66,37 @@ export default function AdminBundlesPage() {
     price: 49,
     status: 'PUBLISHED',
     thumbnail: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=600&auto=format&fit=crop&q=80',
-    selectedQuestionIds: [] as string[],
   });
+
+  // Per-subject question count allocation state: { [subjectId]: count }
+  const [subjectAllocations, setSubjectAllocations] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
+
+  // Quick Inline Subject Creation inside modal
+  const [showAddSubject, setShowAddSubject] = useState(false);
+  const [newSubjectName, setNewSubjectName] = useState('');
+  const [addingSubject, setAddingSubject] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [bundlesRes, examsRes, qRes] = await Promise.all([
+      const [bundlesRes, currRes] = await Promise.all([
         fetch('/api/admin/bundles'),
-        fetch('/api/exams'),
-        fetch('/api/admin/questions'),
+        fetch('/api/admin/curriculum'),
       ]);
 
-      const [bundlesData, examsData, qData] = await Promise.all([
+      const [bundlesData, currData] = await Promise.all([
         bundlesRes.json(),
-        examsRes.json(),
-        qRes.json(),
+        currRes.json(),
       ]);
 
       if (bundlesData.bundles) setBundles(bundlesData.bundles);
-      if (examsData.exams) {
-        setExams(examsData.exams);
-        if (!formData.examId && examsData.exams.length > 0) {
-          setFormData((prev) => ({ ...prev, examId: examsData.exams[0].id }));
+      if (currData.exams) {
+        setExams(currData.exams);
+        if (!formData.examId && currData.exams.length > 0) {
+          setFormData((prev) => ({ ...prev, examId: currData.exams[0].id }));
         }
       }
-      if (qData.questions) setBankQuestions(qData.questions);
     } catch (err) {
       console.error(err);
     } finally {
@@ -95,6 +110,8 @@ export default function AdminBundlesPage() {
 
   const handleOpenCreate = () => {
     setEditingBundleId(null);
+    setSubjectAllocations({});
+    setShowAddSubject(false);
     setFormData({
       name: '',
       description: '',
@@ -104,35 +121,29 @@ export default function AdminBundlesPage() {
       price: 49,
       status: 'PUBLISHED',
       thumbnail: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?w=600&auto=format&fit=crop&q=80',
-      selectedQuestionIds: [],
     });
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = async (bundle: BundleItem) => {
     setEditingBundleId(bundle.id);
-    try {
-      const res = await fetch(`/api/admin/bundles/${bundle.id}`);
-      const data = await res.json();
-      setFormData({
-        name: bundle.name,
-        description: bundle.description,
-        examId: bundle.exam.id,
-        subjectName: bundle.subjectName || '',
-        difficulty: bundle.difficulty,
-        price: bundle.price,
-        status: bundle.status,
-        thumbnail: bundle.thumbnail || '',
-        selectedQuestionIds: data.bundle?.questionIds || [],
-      });
-      setIsModalOpen(true);
-    } catch (err) {
-      console.error(err);
-    }
+    setSubjectAllocations({});
+    setShowAddSubject(false);
+    setFormData({
+      name: bundle.name,
+      description: bundle.description,
+      examId: bundle.exam.id,
+      subjectName: bundle.subjectName || '',
+      difficulty: bundle.difficulty,
+      price: bundle.price,
+      status: bundle.status,
+      thumbnail: bundle.thumbnail || '',
+    });
+    setIsModalOpen(true);
   };
 
   const handleDeleteBundle = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this bundle?')) return;
+    if (!confirm('Are you sure you want to delete this bundle? All associated questions and data for this bundle will be removed.')) return;
     try {
       const res = await fetch(`/api/admin/bundles/${id}`, { method: 'DELETE' });
       if (res.ok) {
@@ -140,6 +151,53 @@ export default function AdminBundlesPage() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleExamChange = (newExamId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      examId: newExamId,
+    }));
+    // Reset subject allocations when exam changes
+    setSubjectAllocations({});
+  };
+
+  const handleSetAllocation = (subjectId: string, count: number) => {
+    setSubjectAllocations((prev) => ({
+      ...prev,
+      [subjectId]: Math.max(0, count),
+    }));
+  };
+
+  const handleQuickAddSubject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubjectName.trim() || !formData.examId) return;
+
+    setAddingSubject(true);
+    try {
+      const res = await fetch('/api/admin/curriculum', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'subject',
+          examId: formData.examId,
+          name: newSubjectName.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        setNewSubjectName('');
+        setShowAddSubject(false);
+        // Refresh curriculum to show new subject immediately
+        const currRes = await fetch('/api/admin/curriculum');
+        const currData = await currRes.json();
+        if (currData.exams) setExams(currData.exams);
+      }
+    } catch (err) {
+      console.error('Failed to add subject', err);
+    } finally {
+      setAddingSubject(false);
     }
   };
 
@@ -152,12 +210,16 @@ export default function AdminBundlesPage() {
         : '/api/admin/bundles';
       const method = editingBundleId ? 'PUT' : 'POST';
 
+      const allocationsArray = Object.entries(subjectAllocations)
+        .filter(([_, count]) => count > 0)
+        .map(([subjectId, count]) => ({ subjectId, count }));
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          questionIds: formData.selectedQuestionIds,
+          subjectAllocations: allocationsArray,
         }),
       });
 
@@ -172,17 +234,12 @@ export default function AdminBundlesPage() {
     }
   };
 
-  const toggleQuestionSelection = (qId: string) => {
-    setFormData((prev) => {
-      const exists = prev.selectedQuestionIds.includes(qId);
-      return {
-        ...prev,
-        selectedQuestionIds: exists
-          ? prev.selectedQuestionIds.filter((id) => id !== qId)
-          : [...prev.selectedQuestionIds, qId],
-      };
-    });
-  };
+  // Find currently selected exam and its available subjects
+  const currentExam = exams.find((e) => e.id === formData.examId) || exams[0];
+  const availableSubjects: SubjectItem[] = currentExam?.subjects || [];
+
+  // Calculate total questions selected from all subjects
+  const totalQuestionsSelected = Object.values(subjectAllocations).reduce((acc, val) => acc + (val || 0), 0);
 
   return (
     <div className="space-y-8 max-w-6xl">
@@ -191,17 +248,26 @@ export default function AdminBundlesPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Bundle Management</h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Create, price, and assign questions to paid practice bundles.
+            Create, price, and customize practice bundles by choosing questions directly from available subjects.
           </p>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Create New Bundle</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/questions/bulk-upload"
+            className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 border border-slate-300 shadow-xs transition"
+          >
+            <Upload className="w-4 h-4 text-indigo-600" />
+            <span>Upload Questions (CSV)</span>
+          </Link>
+          <button
+            onClick={handleOpenCreate}
+            className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm cursor-pointer transition"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create New Bundle</span>
+          </button>
+        </div>
       </div>
 
       {/* Table of Bundles */}
@@ -242,8 +308,24 @@ export default function AdminBundlesPage() {
                 ))
               ) : bundles.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400 font-medium">
-                    No bundles created yet. Click "Create New Bundle" above!
+                  <td colSpan={7} className="py-12 text-center text-slate-500">
+                    <div className="max-w-md mx-auto space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+                        <Layers className="w-6 h-6" />
+                      </div>
+                      <p className="font-bold text-slate-800 text-sm">No Bundles in Database</p>
+                      <p className="text-slate-400 text-xs">
+                        Create your first practice bundle now, or upload questions directly via CSV bulk upload!
+                      </p>
+                      <div className="flex items-center justify-center gap-2 pt-2">
+                        <button
+                          onClick={handleOpenCreate}
+                          className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-700"
+                        >
+                          + Create Bundle
+                        </button>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -258,8 +340,12 @@ export default function AdminBundlesPage() {
                         {b.exam?.name || 'General'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 font-semibold text-slate-700">
-                      {b.questionCount} Questions
+                    <td className="py-3.5 px-4">
+                      <span className={`font-bold px-2 py-0.5 rounded text-xs ${
+                        b.questionCount > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                      }`}>
+                        {b.questionCount} Questions
+                      </span>
                     </td>
                     <td className="py-3.5 px-4 font-black text-slate-900 text-sm">
                       ₹{b.price}
@@ -281,21 +367,41 @@ export default function AdminBundlesPage() {
                         ₹{b.totalRevenue}
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 text-right space-x-2">
-                      <button
-                        onClick={() => handleOpenEdit(b)}
-                        className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 transition-colors"
-                        title="Edit Bundle"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteBundle(b.id)}
-                        className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors"
-                        title="Delete Bundle"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Link
+                          href={`/admin/questions/bulk-upload?bundleId=${b.id}`}
+                          className="px-2.5 py-1 rounded-lg text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition-colors flex items-center gap-1"
+                          title="Upload questions directly into this bundle"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Upload CSV</span>
+                        </Link>
+                        {b.questionCount > 0 && (
+                          <Link
+                            href={`/practice/${b.id}`}
+                            target="_blank"
+                            className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
+                            title="Test/Preview Practice as Admin"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                        )}
+                        <button
+                          onClick={() => handleOpenEdit(b)}
+                          className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+                          title="Edit Bundle"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBundle(b.id)}
+                          className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors"
+                          title="Delete Bundle"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -305,23 +411,30 @@ export default function AdminBundlesPage() {
         </div>
       </div>
 
-      {/* CREATE / EDIT MODAL */}
+      {/* CREATE / EDIT MODAL (SUBJECT-WISE QUESTION ALLOCATION) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto animate-in fade-in duration-200">
-          <div className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-2xl space-y-6 my-8">
+          <div className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-2xl space-y-6 my-8 max-h-[90vh] overflow-y-auto">
+            {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-              <h2 className="text-xl font-bold text-slate-900">
-                {editingBundleId ? 'Edit Question Bundle' : 'Create Question Bundle'}
-              </h2>
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">
+                  {editingBundleId ? 'Edit Question Bundle' : 'Create Question Bundle'}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Select an exam to view its subjects and specify how many questions to pull from each.
+                </p>
+              </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600"
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* 1. Bundle Title */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Bundle Title
@@ -332,24 +445,26 @@ export default function AdminBundlesPage() {
                   placeholder="e.g. SSC CGL Quantitative Aptitude – Practice Set 2"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
+              {/* 2. Description */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Description
                 </label>
                 <textarea
                   required
-                  rows={3}
+                  rows={2}
                   placeholder="Explain what topics students will practice..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
+              {/* 3. Row: Exam, Subject Name, Price */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
@@ -357,8 +472,8 @@ export default function AdminBundlesPage() {
                   </label>
                   <select
                     value={formData.examId}
-                    onChange={(e) => setFormData({ ...formData, examId: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                    onChange={(e) => handleExamChange(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-semibold text-slate-800"
                   >
                     {exams.map((ex) => (
                       <option key={ex.id} value={ex.id}>
@@ -398,6 +513,7 @@ export default function AdminBundlesPage() {
                 </div>
               </div>
 
+              {/* 4. Row: Difficulty, Publish Status */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
@@ -430,73 +546,184 @@ export default function AdminBundlesPage() {
                 </div>
               </div>
 
-              {/* Question Linker / Bank Selector */}
-              <div className="pt-2 border-t border-slate-100 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Select Questions from Bank ({formData.selectedQuestionIds.length} Selected)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (formData.selectedQuestionIds.length === bankQuestions.length) {
-                        setFormData({ ...formData, selectedQuestionIds: [] });
-                      } else {
-                        setFormData({
-                          ...formData,
-                          selectedQuestionIds: bankQuestions.map((q) => q.id),
-                        });
-                      }
-                    }}
-                    className="text-[11px] font-bold text-indigo-600 hover:underline"
-                  >
-                    {formData.selectedQuestionIds.length === bankQuestions.length
-                      ? 'Deselect All'
-                      : 'Select All Questions'}
-                  </button>
+              {/* 5. AVAILABLE SUBJECTS & QUESTION ALLOCATION SECTION */}
+              <div className="pt-3 border-t border-slate-100 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <div>
+                    <label className="block text-xs font-black text-slate-900 uppercase tracking-wider">
+                      Select Questions by Subject
+                    </label>
+                    <p className="text-[11px] text-slate-500">
+                      Available subjects for <strong className="text-indigo-600">{currentExam?.name || 'Selected Exam'}</strong>. Specify questions from each:
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddSubject(!showAddSubject)}
+                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>{showAddSubject ? 'Cancel' : '+ Add Subject'}</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 text-xs">
-                  {bankQuestions.map((q) => {
-                    const isChecked = formData.selectedQuestionIds.includes(q.id);
-                    return (
-                      <div
-                        key={q.id}
-                        onClick={() => toggleQuestionSelection(q.id)}
-                        className={`p-2.5 flex items-center gap-3 cursor-pointer transition-colors ${
-                          isChecked ? 'bg-indigo-50/70' : 'hover:bg-slate-50'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={() => {}}
-                          className="rounded text-indigo-600 focus:ring-indigo-500 pointer-events-none"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-slate-900 truncate">{q.questionText}</div>
-                          <div className="text-[10px] text-slate-500">
-                            {q.subject?.name} • {q.topic?.name} • {q.difficulty}
+                {/* Inline Add Subject Form */}
+                {showAddSubject && (
+                  <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-2xl flex items-center gap-2 animate-fade-in">
+                    <input
+                      type="text"
+                      placeholder={`New subject name for ${currentExam?.name}...`}
+                      value={newSubjectName}
+                      onChange={(e) => setNewSubjectName(e.target.value)}
+                      className="flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleQuickAddSubject}
+                      disabled={!newSubjectName.trim() || addingSubject}
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition disabled:opacity-50"
+                    >
+                      {addingSubject ? 'Adding...' : 'Save Subject'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Subjects List */}
+                {availableSubjects.length === 0 ? (
+                  <div className="p-4 rounded-2xl border border-amber-200 bg-amber-50/60 text-amber-900 text-xs flex items-center justify-between">
+                    <span>No subjects created for this exam yet. Click <strong>+ Add Subject</strong> above to add one!</span>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                    {availableSubjects.map((subj) => {
+                      const availableCount = subj._count?.questions || 0;
+                      const currentAllocation = subjectAllocations[subj.id] || 0;
+
+                      return (
+                        <div
+                          key={subj.id}
+                          className="p-3 rounded-2xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-indigo-200 transition space-y-2"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex items-center gap-2.5">
+                              <div className="p-2 rounded-xl bg-indigo-100/70 text-indigo-700 shrink-0">
+                                <BookOpen className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <span className="font-bold text-xs text-slate-900">{subj.name}</span>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                    availableCount > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
+                                  }`}>
+                                    {availableCount} in Question Bank
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Stepper / Input */}
+                            <div className="flex items-center gap-2 self-end sm:self-auto">
+                              <label className="text-[11px] font-bold text-slate-600">
+                                Take from subject:
+                              </label>
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={availableCount > 0 ? availableCount : undefined}
+                                  value={currentAllocation}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value) || 0;
+                                    handleSetAllocation(subj.id, val);
+                                  }}
+                                  className="w-20 px-2.5 py-1.5 text-xs font-black text-center border border-slate-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                                <span className="text-[11px] text-slate-500 font-medium">Qns</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Quick Set Pills */}
+                          <div className="flex flex-wrap items-center justify-between pt-1.5 border-t border-slate-200/60 text-[10px] gap-2">
+                            <span className="text-slate-400">Quick set:</span>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleSetAllocation(subj.id, 0)}
+                                className="px-2 py-0.5 rounded-md bg-slate-200/70 hover:bg-slate-300 text-slate-700 font-semibold transition cursor-pointer"
+                              >
+                                0
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSetAllocation(subj.id, 5)}
+                                className="px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold transition cursor-pointer"
+                              >
+                                5
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSetAllocation(subj.id, 10)}
+                                className="px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold transition cursor-pointer"
+                              >
+                                10
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleSetAllocation(subj.id, 25)}
+                                className="px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold transition cursor-pointer"
+                              >
+                                25
+                              </button>
+                              {availableCount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetAllocation(subj.id, availableCount)}
+                                  className="px-2 py-0.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold transition cursor-pointer"
+                                >
+                                  All ({availableCount})
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Total Questions Counter Banner */}
+                <div className="p-3.5 bg-indigo-50/80 border border-indigo-200 rounded-2xl flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="p-1 rounded-md bg-indigo-600 text-white">
+                      <Hash className="w-3.5 h-3.5" />
+                    </span>
+                    <span className="font-bold text-slate-900">
+                      Total Questions Selected for this Bundle:
+                    </span>
+                  </div>
+                  <span className="font-black text-sm text-indigo-700 bg-white px-3 py-1 rounded-xl border border-indigo-200 shadow-xs">
+                    {totalQuestionsSelected} Questions
+                  </span>
                 </div>
               </div>
 
+              {/* Action Buttons */}
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs disabled:opacity-50"
+                  className="px-6 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs disabled:opacity-50 transition cursor-pointer"
                 >
                   {submitting ? 'Saving...' : editingBundleId ? 'Save Changes' : 'Create Bundle'}
                 </button>

@@ -63,6 +63,7 @@ export async function POST(request: Request) {
       thumbnail,
       status,
       questionIds,
+      subjectAllocations,
     } = body;
 
     if (!name || !description || !examId || price === undefined) {
@@ -85,11 +86,43 @@ export async function POST(request: Request) {
       },
     });
 
-    // Link questions if provided
+    // 1. Link questions via subjectAllocations (e.g. N questions from each subject)
+    if (subjectAllocations && Array.isArray(subjectAllocations) && subjectAllocations.length > 0) {
+      for (const alloc of subjectAllocations) {
+        if (alloc.subjectId && alloc.count > 0) {
+          const questions = await prisma.question.findMany({
+            where: {
+              subjectId: alloc.subjectId,
+              bundleLinks: { none: { bundleId: bundle.id } },
+            },
+            take: alloc.count,
+            select: { id: true },
+          });
+
+          for (const q of questions) {
+            await prisma.bundleQuestion.create({
+              data: {
+                bundleId: bundle.id,
+                questionId: q.id,
+              },
+            });
+          }
+        }
+      }
+    }
+
+    // 2. Link individual questions if provided
     if (questionIds && Array.isArray(questionIds) && questionIds.length > 0) {
       for (const qId of questionIds) {
-        await prisma.bundleQuestion.create({
-          data: {
+        await prisma.bundleQuestion.upsert({
+          where: {
+            bundleId_questionId: {
+              bundleId: bundle.id,
+              questionId: qId,
+            },
+          },
+          update: {},
+          create: {
             bundleId: bundle.id,
             questionId: qId,
           },

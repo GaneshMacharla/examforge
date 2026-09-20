@@ -1,4 +1,4 @@
-﻿import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -753,8 +753,15 @@ async function main() {
   ];
 
   const createdQuestions: { id: string; subjectId: string; correctAnswer: string }[] = [];
+  const subjMap = new Map<string, string>();
   for (const q of allQuestions) {
-    const question = await prisma.question.create({ data: q });
+    let examId = subjMap.get(q.subjectId);
+    if (!examId) {
+      const s = await prisma.subject.findUnique({ where: { id: q.subjectId }, select: { examId: true } });
+      examId = s?.examId || ssc.id;
+      subjMap.set(q.subjectId, examId);
+    }
+    const question = await prisma.question.create({ data: { ...q, examId } });
     createdQuestions.push(question);
   }
   console.log(`Created ${createdQuestions.length} questions.`);

@@ -10,7 +10,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { action, csvContent, subjectId, topicId, validRowsToImport } = await request.json();
+    const { action, csvContent, bundleId, subjectId, topicId, validRowsToImport } = await request.json();
 
     if (action === 'validate') {
       if (!csvContent || typeof csvContent !== 'string') {
@@ -110,19 +110,129 @@ export async function POST(request: Request) {
     }
 
     if (action === 'import') {
-      if (!subjectId || !topicId) {
-        return NextResponse.json(
-          { error: 'Subject and Topic selection required for import' },
-          { status: 400 }
-        );
-      }
-
       if (!validRowsToImport || !Array.isArray(validRowsToImport) || validRowsToImport.length === 0) {
         return NextResponse.json({ error: 'No valid rows to import' }, { status: 400 });
       }
 
-      // Verify subject and topic exist
-      const topic = await prisma.topic.findUnique({ where: { id: topicId } });
+      // Mode A: Direct Bundle Import (Recommended for Admin)
+      if (bundleId) {
+        const bundle = await prisma.bundle.findUnique({
+          where: { id: bundleId },
+          include: { exam: true },
+        });
+
+        if (!bundle) {
+          return NextResponse.json({ error: 'Selected bundle does not exist' }, { status: 404 });
+        }
+
+        // Resolve subject under the bundle's exam
+        const subjectName = bundle.subjectName || 'General Studies';
+        let subject = await prisma.subject.findFirst({
+          where: {
+            examId: bundle.examId,
+            name: { equals: subjectName, mode: 'insensitive' },
+          },
+        });
+
+        if (!subject) {
+          subject = await prisma.subject.create({
+            data: {
+              examId: bundle.examId,
+              name: subjectName,
+              description: `Subject for ${bundle.name}`,
+            },
+          });
+        }
+
+        // Resolve default topic
+        let defaultTopic = await prisma.topic.findFirst({
+          where: { subjectId: subject.id },
+        });
+
+        if (!defaultTopic) {
+          defaultTopic = await prisma.topic.create({
+            data: {
+              subjectId: subject.id,
+              name: 'Practice Questions',
+            },
+          });
+        }
+
+        let imported = 0;
+        for (const row of validRowsToImport) {
+          let targetTopicId = defaultTopic.id;
+
+          // If tags contain topic info, create or associate with that topic
+          if (row.tags) {
+            const firstTag = row.tags.split(',')[0].trim();
+            if (firstTag && firstTag.length > 1 && firstTag.length <= 40) {
+              let tagTopic = await prisma.topic.findFirst({
+                where: {
+                  subjectId: subject.id,
+                  name: { equals: firstTag, mode: 'insensitive' },
+                },
+              });
+
+              if (!tagTopic) {
+                tagTopic = await prisma.topic.create({
+                  data: {
+                    subjectId: subject.id,
+                    name: firstTag,
+                  },
+                });
+              }
+              targetTopicId = tagTopic.id;
+            }
+          }
+
+          const createdQuestion = await prisma.question.create({
+            data: {
+              examId: bundle.examId,
+              subjectId: subject.id,
+              topicId: targetTopicId,
+              questionText: row.questionText,
+              optionA: row.optionA,
+              optionB: row.optionB,
+              optionC: row.optionC,
+              optionD: row.optionD,
+              correctAnswer: row.correctAnswer,
+              explanation: row.explanation,
+              difficulty: row.difficulty,
+              tags: row.tags || null,
+            },
+          });
+
+          await prisma.bundleQuestion.create({
+            data: {
+              bundleId: bundle.id,
+              questionId: createdQuestion.id,
+            },
+          });
+
+          imported++;
+        }
+
+        return NextResponse.json({
+          success: true,
+          importedCount: imported,
+          bundleId: bundle.id,
+          bundleName: bundle.name,
+          message: `Successfully imported ${imported} questions directly into "${bundle.name}"!`,
+        });
+      }
+
+      // Mode B: Legacy Subject & Topic Import
+      if (!subjectId || !topicId) {
+        return NextResponse.json(
+          { error: 'Please select a Bundle to import questions into.' },
+          { status: 400 }
+        );
+      }
+
+      const topic = await prisma.topic.findUnique({
+        where: { id: topicId },
+        include: { subject: true },
+      });
       if (!topic) {
         return NextResponse.json({ error: 'Selected topic does not exist' }, { status: 404 });
       }
@@ -131,6 +241,7 @@ export async function POST(request: Request) {
       for (const row of validRowsToImport) {
         await prisma.question.create({
           data: {
+            examId: topic.subject.examId,
             subjectId,
             topicId,
             questionText: row.questionText,

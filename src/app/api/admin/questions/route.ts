@@ -117,6 +117,7 @@ export async function POST(request: Request) {
     // ── Create ────────────────────────────────────────────────────────────────
     const question = await prisma.question.create({
       data: {
+        examId: subject.examId,
         subjectId,
         topicId,
         questionText,
