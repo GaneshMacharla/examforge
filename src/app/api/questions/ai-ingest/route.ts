@@ -67,8 +67,16 @@ export async function GET(request: Request) {
       orderBy: { name: 'asc' },
     });
 
+    const dbUrl = process.env.DATABASE_URL || '';
+    const connectedDatabase = dbUrl.includes('supabase')
+      ? 'Supabase'
+      : dbUrl.includes('neon')
+      ? 'Neon'
+      : 'Other';
+
     return NextResponse.json({
       status: 'ready',
+      connectedDatabase,
       message: 'AI Ingestion endpoint is active. POST questions to this URL.',
       availableCurriculum: exams,
     });
