@@ -600,13 +600,15 @@ export default function AdminBundlesPage() {
                                 <input
                                   type="number"
                                   min={0}
-                                  max={availableCount > 0 ? availableCount : undefined}
+                                  max={availableCount}
+                                  disabled={availableCount === 0}
                                   value={currentAllocation}
                                   onChange={(e) => {
                                     const val = parseInt(e.target.value) || 0;
-                                    handleSetAllocation(subj.id, val);
+                                    const clamped = Math.max(0, Math.min(val, availableCount));
+                                    handleSetAllocation(subj.id, clamped);
                                   }}
-                                  className="w-20 px-2.5 py-1.5 text-xs font-black text-center border border-slate-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                  className="w-20 px-2.5 py-1.5 text-xs font-black text-center border border-slate-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100 disabled:text-slate-400"
                                 />
                                 <span className="text-[11px] text-slate-500 font-medium">Qns</span>
                               </div>
@@ -624,27 +626,18 @@ export default function AdminBundlesPage() {
                               >
                                 0
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSetAllocation(subj.id, 5)}
-                                className="px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold transition cursor-pointer"
-                              >
-                                5
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSetAllocation(subj.id, 10)}
-                                className="px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold transition cursor-pointer"
-                              >
-                                10
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleSetAllocation(subj.id, 25)}
-                                className="px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold transition cursor-pointer"
-                              >
-                                25
-                              </button>
+                              {[5, 10, 25]
+                                .filter((n) => n < availableCount)
+                                .map((n) => (
+                                  <button
+                                    key={n}
+                                    type="button"
+                                    onClick={() => handleSetAllocation(subj.id, n)}
+                                    className="px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold transition cursor-pointer"
+                                  >
+                                    {n}
+                                  </button>
+                                ))}
                               {availableCount > 0 && (
                                 <button
                                   type="button"
