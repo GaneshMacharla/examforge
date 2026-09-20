@@ -61,7 +61,6 @@ export default function AdminBundlesPage() {
     name: '',
     description: '',
     examId: '',
-    subjectName: '',
     difficulty: 'Mixed',
     price: 49,
     status: 'PUBLISHED',
@@ -116,7 +115,6 @@ export default function AdminBundlesPage() {
       name: '',
       description: '',
       examId: exams[0]?.id || '',
-      subjectName: '',
       difficulty: 'Mixed',
       price: 49,
       status: 'PUBLISHED',
@@ -133,10 +131,9 @@ export default function AdminBundlesPage() {
       name: bundle.name,
       description: bundle.description,
       examId: bundle.exam.id,
-      subjectName: bundle.subjectName || '',
       difficulty: bundle.difficulty,
       price: bundle.price,
-      status: bundle.status,
+      status: bundle.status || 'PUBLISHED',
       thumbnail: bundle.thumbnail || '',
     });
     setIsModalOpen(true);
@@ -464,7 +461,7 @@ export default function AdminBundlesPage() {
                 />
               </div>
 
-              {/* 3. Row: Exam, Subject Name, Price */}
+              {/* 3. Row: Exam, Price, Difficulty */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
@@ -485,19 +482,6 @@ export default function AdminBundlesPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Subject Name
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Mathematics"
-                    value={formData.subjectName}
-                    onChange={(e) => setFormData({ ...formData, subjectName: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Price (₹ INR)
                   </label>
                   <input
@@ -511,10 +495,7 @@ export default function AdminBundlesPage() {
                     className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
-              </div>
 
-              {/* 4. Row: Difficulty, Publish Status */}
-              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Difficulty
@@ -528,20 +509,6 @@ export default function AdminBundlesPage() {
                     <option value="Medium">Medium</option>
                     <option value="Hard">Hard</option>
                     <option value="Mixed">Mixed</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Publish Status
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                  >
-                    <option value="PUBLISHED">Published (Available in Store)</option>
-                    <option value="DRAFT">Draft (Hidden)</option>
                   </select>
                 </div>
               </div>
