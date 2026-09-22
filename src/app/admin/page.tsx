@@ -11,6 +11,7 @@ import {
   HelpCircle,
   Plus,
   Upload,
+  GraduationCap,
 } from 'lucide-react';
 
 import { AdminOverviewSkeleton } from '@/components/Skeleton';
@@ -20,6 +21,7 @@ interface OverviewData {
     totalStudents: number;
     totalBundles: number;
     totalQuestions: number;
+    totalExams?: number;
     totalPurchases: number;
     totalRevenue: number;
   };
@@ -67,15 +69,22 @@ export default function AdminOverviewPage() {
 
         <div className="flex items-center gap-2">
           <Link
+            href="/admin/exams"
+            className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-300 flex items-center gap-1.5 shadow-xs transition"
+          >
+            <GraduationCap className="w-4 h-4 text-indigo-600" />
+            <span>Manage Exams</span>
+          </Link>
+          <Link
             href="/admin/bundles"
-            className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs"
+            className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition"
           >
             <Plus className="w-4 h-4" />
             <span>Create Bundle</span>
           </Link>
           <Link
             href="/admin/questions/bulk-upload"
-            className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs border border-slate-300 flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs border border-slate-300 flex items-center gap-1.5 transition"
           >
             <Upload className="w-4 h-4" />
             <span>Bulk CSV</span>

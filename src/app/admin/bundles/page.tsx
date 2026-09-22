@@ -15,6 +15,7 @@ import {
   Sparkles,
   HelpCircle,
   Hash,
+  GraduationCap,
 } from 'lucide-react';
 import { Skeleton } from '@/components/Skeleton';
 
@@ -76,6 +77,12 @@ export default function AdminBundlesPage() {
   const [newSubjectName, setNewSubjectName] = useState('');
   const [addingSubject, setAddingSubject] = useState(false);
 
+  // Quick Inline Exam Creation inside modal
+  const [showAddExam, setShowAddExam] = useState(false);
+  const [newExamName, setNewExamName] = useState('');
+  const [newExamCode, setNewExamCode] = useState('');
+  const [addingExam, setAddingExam] = useState(false);
+
   const fetchAll = async () => {
     setLoading(true);
     try {
@@ -111,6 +118,7 @@ export default function AdminBundlesPage() {
     setEditingBundleId(null);
     setSubjectAllocations({});
     setShowAddSubject(false);
+    setShowAddExam(false);
     setFormData({
       name: '',
       description: '',
@@ -127,6 +135,7 @@ export default function AdminBundlesPage() {
     setEditingBundleId(bundle.id);
     setSubjectAllocations({});
     setShowAddSubject(false);
+    setShowAddExam(false);
     setFormData({
       name: bundle.name,
       description: bundle.description,
@@ -198,6 +207,43 @@ export default function AdminBundlesPage() {
     }
   };
 
+  const handleQuickAddExam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newExamName.trim() || !newExamCode.trim()) return;
+
+    setAddingExam(true);
+    try {
+      const res = await fetch('/api/admin/exams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newExamName.trim(),
+          code: newExamCode.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.exam) {
+        setNewExamName('');
+        setNewExamCode('');
+        setShowAddExam(false);
+        // Refresh curriculum and select the new exam
+        const currRes = await fetch('/api/admin/curriculum');
+        const currData = await currRes.json();
+        if (currData.exams) {
+          setExams(currData.exams);
+          setFormData((prev) => ({ ...prev, examId: data.exam.id }));
+        }
+      } else {
+        alert(data.error || 'Failed to create exam');
+      }
+    } catch (err) {
+      console.error('Failed to add exam', err);
+    } finally {
+      setAddingExam(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -249,7 +295,14 @@ export default function AdminBundlesPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/exams"
+            className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 border border-slate-300 shadow-xs transition"
+          >
+            <GraduationCap className="w-4 h-4 text-indigo-600" />
+            <span>Exams</span>
+          </Link>
           <Link
             href="/admin/questions/bulk-upload"
             className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 border border-slate-300 shadow-xs transition"
@@ -462,24 +515,64 @@ export default function AdminBundlesPage() {
               </div>
 
               {/* 3. Row: Exam, Price, Difficulty */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Exam
+              {/* 3. Exam Category with Quick Add */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Exam Category
                   </label>
-                  <select
-                    value={formData.examId}
-                    onChange={(e) => handleExamChange(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-semibold text-slate-800"
+                  <button
+                    type="button"
+                    onClick={() => setShowAddExam(!showAddExam)}
+                    className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
                   >
-                    {exams.map((ex) => (
-                      <option key={ex.id} value={ex.id}>
-                        {ex.name}
-                      </option>
-                    ))}
-                  </select>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{showAddExam ? 'Cancel' : '+ New Exam'}</span>
+                  </button>
                 </div>
 
+                {showAddExam && (
+                  <div className="mb-2.5 p-3 bg-indigo-50/70 border border-indigo-200 rounded-2xl flex flex-col sm:flex-row items-center gap-2 animate-fade-in">
+                    <input
+                      type="text"
+                      placeholder="Exam Name (e.g. UPSC, GATE)..."
+                      value={newExamName}
+                      onChange={(e) => setNewExamName(e.target.value)}
+                      className="w-full sm:flex-1 px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Code (e.g. UPSC)..."
+                      value={newExamCode}
+                      onChange={(e) => setNewExamCode(e.target.value.toUpperCase().replace(/\s+/g, '_'))}
+                      className="w-full sm:w-24 px-3 py-1.5 text-xs font-mono font-bold bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleQuickAddExam}
+                      disabled={!newExamName.trim() || !newExamCode.trim() || addingExam}
+                      className="w-full sm:w-auto px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition disabled:opacity-50 cursor-pointer shrink-0"
+                    >
+                      {addingExam ? 'Saving...' : 'Save Exam'}
+                    </button>
+                  </div>
+                )}
+
+                <select
+                  value={formData.examId}
+                  onChange={(e) => handleExamChange(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-semibold text-slate-800"
+                >
+                  {exams.map((ex) => (
+                    <option key={ex.id} value={ex.id}>
+                      {ex.name} ({ex.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 4. Row: Price & Difficulty */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Price (₹ INR)

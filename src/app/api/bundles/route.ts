@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 import { getFilteredMockBundles } from '@/lib/mockData';
+import { ensureDefaultBundles } from '@/lib/seedBundles';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -11,6 +12,7 @@ export async function GET(request: Request) {
 
   try {
     const currentUser = await getCurrentUser();
+    await ensureDefaultBundles();
 
     // Query builder
     const where: any = {
@@ -27,9 +29,9 @@ export async function GET(request: Request) {
 
     if (search && search.trim()) {
       where.OR = [
-        { name: { contains: search.trim() } },
-        { description: { contains: search.trim() } },
-        { subjectName: { contains: search.trim() } },
+        { name: { contains: search.trim(), mode: 'insensitive' } },
+        { description: { contains: search.trim(), mode: 'insensitive' } },
+        { subjectName: { contains: search.trim(), mode: 'insensitive' } },
       ];
     }
 
@@ -49,44 +51,38 @@ export async function GET(request: Request) {
       orderBy: { createdAt: 'desc' },
     });
 
-    if (bundles.length > 0) {
-      let purchasedBundleIds = new Set<string>();
-      if (currentUser) {
-        try {
-          const userPurchases = await prisma.purchase.findMany({
-            where: {
-              userId: currentUser.id,
-              status: 'PAID',
-            },
-            select: { bundleId: true },
-          });
-          purchasedBundleIds = new Set(userPurchases.map((p) => p.bundleId));
-        } catch {
-          // ignore purchase lookup error if DB has issues
-        }
+    let purchasedBundleIds = new Set<string>();
+    if (currentUser) {
+      try {
+        const userPurchases = await prisma.purchase.findMany({
+          where: {
+            userId: currentUser.id,
+            status: 'PAID',
+          },
+          select: { bundleId: true },
+        });
+        purchasedBundleIds = new Set(userPurchases.map((p) => p.bundleId));
+      } catch {
+        // ignore purchase lookup error if DB has issues
       }
-
-      const formattedBundles = bundles.map((b) => ({
-        id: b.id,
-        name: b.name,
-        description: b.description,
-        subjectName: b.subjectName,
-        difficulty: b.difficulty,
-        price: b.price,
-        thumbnail: b.thumbnail,
-        status: b.status,
-        exam: b.exam,
-        questionCount: b._count.questions,
-        salesCount: b._count.purchases,
-        isPurchased: purchasedBundleIds.has(b.id),
-      }));
-
-      return NextResponse.json({ bundles: formattedBundles });
     }
 
-    // Fallback to rich mock bundles if DB is unseeded
-    const fallbackBundles = getFilteredMockBundles({ exam: examCode, difficulty, search });
-    return NextResponse.json({ bundles: fallbackBundles });
+    const formattedBundles = bundles.map((b) => ({
+      id: b.id,
+      name: b.name,
+      description: b.description,
+      subjectName: b.subjectName,
+      difficulty: b.difficulty,
+      price: b.price,
+      thumbnail: b.thumbnail,
+      status: b.status,
+      exam: b.exam,
+      questionCount: b._count.questions,
+      salesCount: b._count.purchases,
+      isPurchased: purchasedBundleIds.has(b.id),
+    }));
+
+    return NextResponse.json({ bundles: formattedBundles });
   } catch (error: unknown) {
     console.warn('Database unreachable. Serving fallback question bundles:', error);
     const fallbackBundles = getFilteredMockBundles({ exam: examCode, difficulty, search });

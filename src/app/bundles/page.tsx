@@ -21,10 +21,27 @@ interface Bundle {
 
 export default function BundlesCatalogPage() {
   const [bundles, setBundles] = useState<Bundle[]>([]);
+  const [availableExams, setAvailableExams] = useState<Array<{ id: string; name: string; code: string }>>([
+    { id: 'exam_ssc', name: 'SSC (CGL, CHSL)', code: 'SSC' },
+    { id: 'exam_banking', name: 'Banking & Insurance', code: 'BANKING' },
+    { id: 'exam_rrb', name: 'RRB Railways', code: 'RRB' },
+    { id: 'exam_state', name: 'State PSCs', code: 'STATE_PSC' },
+  ]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedExam, setSelectedExam] = useState('ALL');
   const [selectedDifficulty, setSelectedDifficulty] = useState('ALL');
+
+  useEffect(() => {
+    fetch('/api/exams')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.exams && data.exams.length > 0) {
+          setAvailableExams(data.exams);
+        }
+      })
+      .catch((err) => console.error('Failed to load exams', err));
+  }, []);
 
   const fetchBundles = async () => {
     setLoading(true);
@@ -99,10 +116,11 @@ export default function BundlesCatalogPage() {
                 className="w-full sm:w-auto px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[36px]"
               >
                 <option value="ALL">All Exams</option>
-                <option value="SSC">SSC (CGL, CHSL)</option>
-                <option value="BANKING">Banking & Insurance</option>
-                <option value="RRB">RRB Railways</option>
-                <option value="STATE_PSC">State PSCs</option>
+                {availableExams.map((ex) => (
+                  <option key={ex.code} value={ex.code}>
+                    {ex.name}
+                  </option>
+                ))}
               </select>
             </div>
 

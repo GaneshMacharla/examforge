@@ -39,12 +39,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { type, name, code, description, examId, subjectId } = await request.json();
+    const { type, name, code, description, icon, examId, subjectId } = await request.json();
 
     if (type === 'exam') {
       if (!name || !code) return NextResponse.json({ error: 'Exam name and code required' }, { status: 400 });
       const exam = await prisma.exam.create({
-        data: { name: name.trim(), code: code.trim().toUpperCase(), description },
+        data: {
+          name: name.trim(),
+          code: code.trim().toUpperCase().replace(/\s+/g, '_'),
+          description: description?.trim() || null,
+          icon: icon?.trim() || 'GraduationCap',
+        },
       });
       return NextResponse.json({ success: true, exam });
     }

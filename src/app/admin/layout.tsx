@@ -13,6 +13,7 @@ import {
   ShieldAlert,
   ArrowLeft,
   BookOpen,
+  GraduationCap,
 } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -48,6 +49,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const navItems = [
     { href: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true },
+    { href: '/admin/exams', label: 'Exam Categories', icon: GraduationCap },
     { href: '/admin/bundles', label: 'Bundle Manager', icon: Layers },
     { href: '/admin/questions', label: 'Question Bank', icon: HelpCircle, exact: true },
     { href: '/admin/questions/bulk-upload', label: 'Bulk Upload CSV', icon: Upload },

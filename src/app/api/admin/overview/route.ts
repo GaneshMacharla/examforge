@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { ensureDefaultBundles } from '@/lib/seedBundles';
 
 export async function GET() {
   try {
@@ -9,16 +10,20 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
+    await ensureDefaultBundles();
+
     const [
       totalStudents,
       totalBundles,
       totalQuestions,
+      totalExams,
       paidPurchases,
       recentPurchases,
     ] = await Promise.all([
       prisma.user.count({ where: { role: 'STUDENT' } }),
       prisma.bundle.count(),
       prisma.question.count(),
+      prisma.exam.count(),
       prisma.purchase.findMany({
         where: { status: 'PAID' },
         select: { amount: true },
@@ -41,6 +46,7 @@ export async function GET() {
         totalStudents,
         totalBundles,
         totalQuestions,
+        totalExams,
         totalPurchases: paidPurchases.length,
         totalRevenue,
       },

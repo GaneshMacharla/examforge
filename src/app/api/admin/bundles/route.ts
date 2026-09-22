@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
+import { ensureDefaultBundles } from '@/lib/seedBundles';
 
 export async function GET() {
   try {
@@ -8,6 +9,8 @@ export async function GET() {
     if (!user || user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    await ensureDefaultBundles();
 
     const bundles = await prisma.bundle.findMany({
       include: {
