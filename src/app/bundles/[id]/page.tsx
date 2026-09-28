@@ -39,6 +39,7 @@ interface BundleDetail {
     optionB: string;
     optionC: string;
     optionD: string;
+    optionE?: string | null;
     difficulty: string;
     topic: string;
     correctAnswer?: string;
@@ -381,6 +382,11 @@ export default function BundleDetailPage() {
                 <div className="p-2.5 rounded-lg border border-slate-200 bg-white font-medium text-slate-800">
                   <span className="font-bold text-indigo-600 mr-2">D.</span> {q.optionD}
                 </div>
+                {q.optionE && (
+                  <div className="p-2.5 rounded-lg border border-slate-200 bg-white font-medium text-slate-800">
+                    <span className="font-bold text-indigo-600 mr-2">E.</span> {q.optionE}
+                  </div>
+                )}
               </div>
 
               {bundle.isPurchased ? (

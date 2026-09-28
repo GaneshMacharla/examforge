@@ -78,6 +78,7 @@ export async function GET(
       optionB: bq.question.optionB,
       optionC: bq.question.optionC,
       optionD: bq.question.optionD,
+      optionE: bq.question.optionE,
       difficulty: bq.question.difficulty,
       topic: bq.question.topic.name,
       // If user owns it, show answers, otherwise hide

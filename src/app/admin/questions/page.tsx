@@ -21,6 +21,7 @@ interface QuestionItem {
   optionB: string;
   optionC: string;
   optionD: string;
+  optionE?: string | null;
   correctAnswer: string;
   explanation: string;
   difficulty: string;
@@ -47,6 +48,7 @@ export default function AdminQuestionBankPage() {
     optionB: '',
     optionC: '',
     optionD: '',
+    optionE: '',
     correctAnswer: 'A',
     explanation: '',
     difficulty: 'Medium',
@@ -130,6 +132,7 @@ export default function AdminQuestionBankPage() {
           optionB: '',
           optionC: '',
           optionD: '',
+          optionE: '',
           explanation: '',
           tags: '',
         });
@@ -262,8 +265,8 @@ export default function AdminQuestionBankPage() {
               </div>
 
               {/* Options Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                {['A', 'B', 'C', 'D'].map((letter) => {
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs">
+                {['A', 'B', 'C', 'D', ...(q.optionE ? ['E'] : [])].map((letter) => {
                   const optText = (q as any)[`option${letter}`];
                   const isCorrect = q.correctAnswer === letter;
                   return (
@@ -408,6 +411,18 @@ export default function AdminQuestionBankPage() {
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   />
                 </div>
+                <div className="col-span-2">
+                  <label className="block font-bold text-slate-700 uppercase mb-1">
+                    Option E <span className="text-slate-400 font-normal lowercase">(optional for 4-option exams, required for 5-option banking exams)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={newQ.optionE}
+                    onChange={(e) => setNewQ({ ...newQ, optionE: e.target.value })}
+                    placeholder="e.g. None of these / Either I or II follows"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -422,6 +437,7 @@ export default function AdminQuestionBankPage() {
                     <option value="B">Option B</option>
                     <option value="C">Option C</option>
                     <option value="D">Option D</option>
+                    <option value="E">Option E</option>
                   </select>
                 </div>
 

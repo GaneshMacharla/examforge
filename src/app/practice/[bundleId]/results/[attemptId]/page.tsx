@@ -41,6 +41,7 @@ interface AttemptData {
     optionB: string;
     optionC: string;
     optionD: string;
+    optionE?: string | null;
     selectedAnswer: string | null;
     correctAnswer: string;
     isCorrect: boolean;
@@ -277,6 +278,7 @@ export default function TestResultsPage() {
                   { key: 'B', text: q.optionB },
                   { key: 'C', text: q.optionC },
                   { key: 'D', text: q.optionD },
+                  ...(q.optionE ? [{ key: 'E', text: q.optionE }] : []),
                 ].map((opt) => {
                   const isUserSelection = q.selectedAnswer === opt.key;
                   const isTheCorrectAnswer = q.correctAnswer === opt.key;

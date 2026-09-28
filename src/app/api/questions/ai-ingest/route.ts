@@ -15,15 +15,16 @@ function validateAuth(request: Request): boolean {
   return (bearerToken === secret) || (apiKey === secret);
 }
 
-// Normalize correct answer to 'A', 'B', 'C', or 'D'
+// Normalize correct answer to 'A', 'B', 'C', 'D', or 'E'
 function normalizeCorrectAnswer(val: any): string | null {
   if (!val) return null;
   const clean = String(val).trim().toUpperCase();
-  if (['A', 'B', 'C', 'D'].includes(clean)) return clean;
+  if (['A', 'B', 'C', 'D', 'E'].includes(clean)) return clean;
   if (clean === '1' || clean === 'OPTION A' || clean === 'OPTIONA') return 'A';
   if (clean === '2' || clean === 'OPTION B' || clean === 'OPTIONB') return 'B';
   if (clean === '3' || clean === 'OPTION C' || clean === 'OPTIONC') return 'C';
   if (clean === '4' || clean === 'OPTION D' || clean === 'OPTIOND') return 'D';
+  if (clean === '5' || clean === 'OPTION E' || clean === 'OPTIONE') return 'E';
   return null;
 }
 
@@ -271,6 +272,7 @@ export async function POST(request: Request) {
       const optionB = q.optionB?.trim() ?? q.options?.[1]?.trim();
       const optionC = q.optionC?.trim() ?? q.options?.[2]?.trim();
       const optionD = q.optionD?.trim() ?? q.options?.[3]?.trim();
+      const optionE = q.optionE?.trim() ?? q.options?.[4]?.trim() ?? null;
       const correctAnswer = normalizeCorrectAnswer(q.correctAnswer ?? q.answer);
       const explanation = q.explanation?.trim() || 'No explanation provided.';
       const difficulty = normalizeDifficulty(q.difficulty);
@@ -294,7 +296,16 @@ export async function POST(request: Request) {
       if (!correctAnswer) {
         errors.push({
           index: i,
-          error: `Invalid correctAnswer "${q.correctAnswer}". Must be A, B, C, or D.`,
+          error: `Invalid correctAnswer "${q.correctAnswer}". Must be A, B, C, D, or E.`,
+          raw: q,
+        });
+        continue;
+      }
+
+      if (correctAnswer === 'E' && !optionE) {
+        errors.push({
+          index: i,
+          error: `Option E is required when correct answer is E.`,
           raw: q,
         });
         continue;
@@ -312,6 +323,7 @@ export async function POST(request: Request) {
           optionB,
           optionC,
           optionD,
+          optionE: optionE || null,
           correctAnswer,
           explanation,
           difficulty,

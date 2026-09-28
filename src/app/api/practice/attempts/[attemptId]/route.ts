@@ -47,6 +47,7 @@ export async function GET(
       optionB: ans.question.optionB,
       optionC: ans.question.optionC,
       optionD: ans.question.optionD,
+      optionE: ans.question.optionE,
       selectedAnswer: ans.selectedAnswer,
       correctAnswer: ans.question.correctAnswer,
       isCorrect: ans.isCorrect,

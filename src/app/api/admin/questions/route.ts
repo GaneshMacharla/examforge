@@ -65,18 +65,26 @@ export async function POST(request: Request) {
     const optionB       = typeof body.optionB       === 'string' ? body.optionB.trim()       : '';
     const optionC       = typeof body.optionC       === 'string' ? body.optionC.trim()       : '';
     const optionD       = typeof body.optionD       === 'string' ? body.optionD.trim()       : '';
+    const optionE       = typeof body.optionE       === 'string' ? body.optionE.trim()       : null;
     const correctAnswer = typeof body.correctAnswer === 'string' ? body.correctAnswer.trim().toUpperCase() : '';
     const explanation   = typeof body.explanation   === 'string' ? body.explanation.trim()   : '';
     const difficulty    = typeof body.difficulty    === 'string' ? body.difficulty.trim()    : 'Medium';
     const tags          = typeof body.tags          === 'string' ? body.tags.trim()          : null;
 
-    const VALID_ANSWERS    = ['A', 'B', 'C', 'D'] as const;
+    const VALID_ANSWERS    = ['A', 'B', 'C', 'D', 'E'] as const;
     const VALID_DIFFICULTY = ['Easy', 'Medium', 'Hard'] as const;
 
     // ── Required field check ──────────────────────────────────────────────────
     if (!subjectId || !topicId || !questionText || !optionA || !optionB || !optionC || !optionD || !correctAnswer || !explanation) {
       return NextResponse.json(
         { error: 'All question fields including options, answer, and explanation are required.' },
+        { status: 400 }
+      );
+    }
+
+    if (correctAnswer === 'E' && !optionE) {
+      return NextResponse.json(
+        { error: 'Option E is required when correct answer is E.' },
         { status: 400 }
       );
     }
@@ -99,7 +107,8 @@ export async function POST(request: Request) {
     // ── Max length guards ─────────────────────────────────────────────────────
     if (questionText.length > 2000) return NextResponse.json({ error: 'Question text too long (max 2000 chars).' }, { status: 400 });
     if (explanation.length   > 3000) return NextResponse.json({ error: 'Explanation too long (max 3000 chars).' }, { status: 400 });
-    if ([optionA, optionB, optionC, optionD].some(o => o.length > 500)) {
+    const allOptions = [optionA, optionB, optionC, optionD, ...(optionE ? [optionE] : [])];
+    if (allOptions.some(o => o.length > 500)) {
       return NextResponse.json({ error: 'Each option must be 500 characters or fewer.' }, { status: 400 });
     }
 
@@ -126,6 +135,7 @@ export async function POST(request: Request) {
         optionB,
         optionC,
         optionD,
+        optionE: optionE || null,
         correctAnswer,
         explanation,
         difficulty,

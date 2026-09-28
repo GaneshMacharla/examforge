@@ -68,7 +68,8 @@ model Question {
   optionB       String
   optionC       String
   optionD       String
-  correctAnswer String           // A, B, C, or D
+  optionE       String?
+  correctAnswer String           // A, B, C, D, or E
   explanation   String
   difficulty    String           @default("Medium") // Easy, Medium, Hard
   tags          String?          // comma-separated tags

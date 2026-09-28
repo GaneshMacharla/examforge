@@ -1,17 +1,23 @@
 import crypto from 'crypto';
 
-export const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_mock_1234567890';
-export const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'rzp_test_secret_0987654321';
+export const RAZORPAY_KEY_ID = (process.env.RAZORPAY_KEY_ID || 'rzp_test_mock_1234567890')
+  .replace(/['"]/g, '')
+  .trim();
+export const RAZORPAY_KEY_SECRET = (process.env.RAZORPAY_KEY_SECRET || 'rzp_test_secret_0987654321')
+  .replace(/['"]/g, '')
+  .trim();
 
 export function isMockRazorpay(): boolean {
   return (
-    !process.env.RAZORPAY_KEY_ID ||
-    process.env.RAZORPAY_KEY_ID.startsWith('rzp_test_mock')
+    !RAZORPAY_KEY_ID ||
+    RAZORPAY_KEY_ID.startsWith('rzp_test_mock') ||
+    !RAZORPAY_KEY_SECRET ||
+    RAZORPAY_KEY_SECRET.startsWith('rzp_test_secret')
   );
 }
 
 export async function createRazorpayOrder(amountInInr: number, receiptId: string) {
-  const amountInPaise = amountInInr * 100;
+  const amountInPaise = Math.round(amountInInr * 100);
 
   if (isMockRazorpay()) {
     // Generate simulated order
@@ -28,7 +34,7 @@ export async function createRazorpayOrder(amountInInr: number, receiptId: string
 
   // Real Razorpay API call
   const authHeader = Buffer.from(
-    `${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`
+    `${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`
   ).toString('base64');
 
   const response = await fetch('https://api.razorpay.com/v1/orders', {
@@ -47,7 +53,13 @@ export async function createRazorpayOrder(amountInInr: number, receiptId: string
 
   if (!response.ok) {
     const errText = await response.text();
-    throw new Error(`Razorpay Order Creation Failed: ${errText}`);
+    let desc = errText;
+    try {
+      const parsed = JSON.parse(errText);
+      desc = parsed?.error?.description || parsed?.error?.message || errText;
+    } catch {}
+    console.error(`Razorpay API responded with status ${response.status}:`, errText);
+    throw new Error(`Razorpay Error: ${desc}`);
   }
 
   const orderData = await response.json();
@@ -72,7 +84,7 @@ export function verifyRazorpaySignature(
   }
 
   // Real HMAC SHA-256 verification
-  const secret = process.env.RAZORPAY_KEY_SECRET || '';
+  const secret = RAZORPAY_KEY_SECRET;
   const body = `${orderId}|${paymentId}`;
   const expectedSignature = crypto
     .createHmac('sha256', secret)

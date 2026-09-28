@@ -73,8 +73,14 @@ export async function POST(request: Request) {
     });
   } catch (error: unknown) {
     console.error('Create order error:', error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+        ? error
+        : (error as any)?.message || 'Failed to initiate order. Please try again.';
     return NextResponse.json(
-      { error: 'Failed to initiate order. Please try again.' },
+      { error: message },
       { status: 500 }
     );
   }

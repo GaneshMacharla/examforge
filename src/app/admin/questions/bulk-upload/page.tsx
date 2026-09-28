@@ -40,6 +40,7 @@ interface ValidatedRow {
   optionB: string;
   optionC: string;
   optionD: string;
+  optionE?: string | null;
   correctAnswer: string;
   explanation: string;
   difficulty: string;

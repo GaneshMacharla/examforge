@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { CheckCircle2, ShieldCheck, Loader2, X, Lock, ArrowRight } from 'lucide-react';
-import crypto from 'crypto';
 
 interface RazorpayModalProps {
   isOpen: boolean;
@@ -22,6 +21,28 @@ declare global {
   }
 }
 
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window !== 'undefined' && window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const existingScript = document.querySelector('script[src*="checkout.razorpay.com"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve(true));
+      existingScript.addEventListener('error', () => resolve(false));
+      // In case it already loaded
+      if (window.Razorpay) return resolve(true);
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 export default function RazorpayModal({
   isOpen,
   onClose,
@@ -33,12 +54,12 @@ export default function RazorpayModal({
 
   if (!isOpen) return null;
 
-  const handleSimulatedPayment = async () => {
+  const handlePayment = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // 1. Create order
+      // 1. Create Razorpay order on server
       const orderRes = await fetch('/api/payments/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -47,24 +68,45 @@ export default function RazorpayModal({
 
       const orderData = await orderRes.json();
       if (!orderRes.ok) {
-        throw new Error(orderData.error || 'Could not initiate order');
+        throw new Error(orderData.error || 'Could not initiate order. Please make sure you are logged in.');
       }
 
-      // Check if real Razorpay keys are configured
+      // 2. Handle Sandbox / Mock simulation if live keys are not configured
       if (orderData.isMock) {
-        throw new Error(
-          'Razorpay API Keys are not configured. Please add your real RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in the .env file from dashboard.razorpay.com to process payments.'
-        );
+        const mockPaymentId = `pay_sim_${Date.now()}`;
+        const mockSig = `mock_sig_${Date.now()}`;
+
+        const verifyRes = await fetch('/api/payments/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            razorpayOrderId: orderData.orderId,
+            razorpayPaymentId: mockPaymentId,
+            razorpaySignature: mockSig,
+            bundleId: bundle.id,
+          }),
+        });
+
+        const verifyData = await verifyRes.json();
+        if (verifyRes.ok && verifyData.success) {
+          onSuccess(bundle.id);
+          return;
+        } else {
+          throw new Error(verifyData.error || 'Simulated payment verification failed.');
+        }
       }
 
-      if (typeof window === 'undefined' || !window.Razorpay) {
-        throw new Error('Razorpay Checkout SDK is not loaded. Please refresh the page.');
+      // 3. Ensure Razorpay SDK is loaded
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded || typeof window === 'undefined' || !window.Razorpay) {
+        throw new Error('Razorpay Checkout SDK could not be loaded. Please check your internet connection or disable ad blockers and try again.');
       }
 
+      // 4. Launch Razorpay Checkout Popup
       const options = {
         key: orderData.keyId,
         amount: orderData.amount,
-        currency: orderData.currency,
+        currency: orderData.currency || 'INR',
         name: 'ExamForge Practice Hub',
         description: bundle.name,
         order_id: orderData.orderId,
@@ -104,11 +146,10 @@ export default function RazorpayModal({
 
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (resp: any) {
-        setError(resp.error?.description || 'Payment failed or cancelled.');
+        setError(resp.error?.description || 'Payment was cancelled or failed.');
         setLoading(false);
       });
       rzp.open();
-      return;
     } catch (err: any) {
       setError(err.message || 'Payment processing failed');
     } finally {
@@ -188,7 +229,7 @@ export default function RazorpayModal({
           </div>
 
           <button
-            onClick={handleSimulatedPayment}
+            onClick={handlePayment}
             disabled={loading}
             className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold text-sm shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >

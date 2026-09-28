@@ -32,6 +32,7 @@ interface Question {
   optionB: string;
   optionC: string;
   optionD: string;
+  optionE?: string | null;
   correctAnswer: string;
   explanation: string;
   difficulty: string;
@@ -432,6 +433,7 @@ export default function PracticeEnginePage() {
                 { key: 'B', text: currentQ.optionB },
                 { key: 'C', text: currentQ.optionC },
                 { key: 'D', text: currentQ.optionD },
+                ...(currentQ.optionE ? [{ key: 'E', text: currentQ.optionE }] : []),
               ].map((opt) => {
                 const isSelected = currentSelected === opt.key;
                 const isCorrect = opt.key === currentQ.correctAnswer;

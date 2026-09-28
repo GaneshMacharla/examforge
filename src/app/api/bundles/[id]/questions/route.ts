@@ -92,6 +92,7 @@ export async function GET(
       optionB: bq.question.optionB,
       optionC: bq.question.optionC,
       optionD: bq.question.optionD,
+      optionE: bq.question.optionE,
       correctAnswer: bq.question.correctAnswer,
       explanation: bq.question.explanation,
       difficulty: bq.question.difficulty,

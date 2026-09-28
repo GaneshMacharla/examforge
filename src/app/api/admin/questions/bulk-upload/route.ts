@@ -52,6 +52,7 @@ export async function POST(request: Request) {
         const optionB = getField('option b', 'option_b', 'optionb', 'b');
         const optionC = getField('option c', 'option_c', 'optionc', 'c');
         const optionD = getField('option d', 'option_d', 'optiond', 'd');
+        const optionE = getField('option e', 'option_e', 'optione', 'e');
         const answer = getField('answer', 'correct answer', 'correct_answer', 'correctanswer').toUpperCase();
         const explanation = getField('explanation', 'solution', 'rationale');
         const difficulty = getField('difficulty') || 'Medium';
@@ -64,15 +65,23 @@ export async function POST(request: Request) {
         if (!optionA || !optionB || !optionC || !optionD) {
           errors.push({
             rowNumber: rowNum,
-            issue: 'All 4 options (A, B, C, D) are required',
+            issue: 'Options A, B, C, and D are required',
             raw: row,
           });
           return;
         }
-        if (!['A', 'B', 'C', 'D'].includes(answer)) {
+        if (!['A', 'B', 'C', 'D', 'E'].includes(answer)) {
           errors.push({
             rowNumber: rowNum,
-            issue: `Invalid answer "${answer}". Must be A, B, C, or D.`,
+            issue: `Invalid answer "${answer}". Must be A, B, C, D, or E.`,
+            raw: row,
+          });
+          return;
+        }
+        if (answer === 'E' && !optionE) {
+          errors.push({
+            rowNumber: rowNum,
+            issue: `Option E is required when answer is E.`,
             raw: row,
           });
           return;
@@ -92,6 +101,7 @@ export async function POST(request: Request) {
           optionB,
           optionC,
           optionD,
+          optionE: optionE || null,
           correctAnswer: answer,
           explanation,
           difficulty: ['Easy', 'Medium', 'Hard'].includes(difficulty) ? difficulty : 'Medium',
@@ -195,6 +205,7 @@ export async function POST(request: Request) {
               optionB: row.optionB,
               optionC: row.optionC,
               optionD: row.optionD,
+              optionE: row.optionE || null,
               correctAnswer: row.correctAnswer,
               explanation: row.explanation,
               difficulty: row.difficulty,
@@ -249,6 +260,7 @@ export async function POST(request: Request) {
             optionB: row.optionB,
             optionC: row.optionC,
             optionD: row.optionD,
+            optionE: row.optionE || null,
             correctAnswer: row.correctAnswer,
             explanation: row.explanation,
             difficulty: row.difficulty,
